@@ -13,7 +13,8 @@ import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
-import { getUserPosts } from '../../services/postsService';
+import { getUserPosts, deletePost, updatePostAvailability } from '../../services/postsService';
+import { getFollowerCount, getFollowingCount } from '../../services/followsService';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
@@ -31,11 +32,14 @@ export default function ProfileScreen({ navigation }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'swaps'>('posts');
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       if (profile) {
         loadPosts();
+        loadFollowCounts();
       }
     }, [profile?.id])
   );
@@ -50,6 +54,20 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   };
 
+  const loadFollowCounts = async () => {
+    if (!profile) return;
+    try {
+      const [followers, following] = await Promise.all([
+        getFollowerCount(profile.id),
+        getFollowingCount(profile.id),
+      ]);
+      setFollowerCount(followers);
+      setFollowingCount(following);
+    } catch (error) {
+      console.error('Error loading follow counts:', error);
+    }
+  };
+
   // Filter posts based on active tab
   const socialPosts = posts.filter((p) => p.post_type === 'social');
   const swapPosts = posts.filter((p) => p.post_type === 'swap');
@@ -57,7 +75,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadPosts();
+    await Promise.all([loadPosts(), loadFollowCounts()]);
     setRefreshing(false);
   };
 
@@ -137,34 +155,42 @@ export default function ProfileScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Stats - Now as tappable tabs */}
-      <View className="flex-row border-y border-gray-200">
+      {/* Follow counts */}
+      <View className="flex-row justify-around py-3 border-b border-gray-100 mx-6">
+        <View className="items-center">
+          <Text style={{ fontSize: 18, fontWeight: '700' }}>{followerCount}</Text>
+          <Text style={{ fontSize: 13, color: '#6b7280' }}>Followers</Text>
+        </View>
+        <View className="items-center">
+          <Text style={{ fontSize: 18, fontWeight: '700' }}>{followingCount}</Text>
+          <Text style={{ fontSize: 13, color: '#6b7280' }}>Following</Text>
+        </View>
+        <View className="items-center">
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#10b981' }}>{profile.total_swaps || 0}</Text>
+          <Text style={{ fontSize: 13, color: '#6b7280' }}>Swaps</Text>
+        </View>
+        <View className="items-center">
+          <Text style={{ fontSize: 18, fontWeight: '700' }}>{profile.avg_rating?.toFixed(1) || '0.0'}</Text>
+          <Text style={{ fontSize: 13, color: '#6b7280' }}>Rating</Text>
+        </View>
+      </View>
+
+      {/* Post type tabs */}
+      <View className="flex-row border-b border-gray-200">
         <TouchableOpacity
           onPress={() => setActiveTab('posts')}
-          className={`flex-1 py-4 items-center ${activeTab === 'posts' ? 'border-b-2 border-black' : ''}`}
+          className={`flex-1 py-3 items-center ${activeTab === 'posts' ? 'border-b-2 border-black' : ''}`}
         >
           <Text style={{ fontSize: 20, fontWeight: '700' }}>{socialPosts.length}</Text>
           <Text style={{ fontSize: 14, color: activeTab === 'posts' ? '#000' : '#6b7280' }}>Posts</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setActiveTab('swaps')}
-          className={`flex-1 py-4 items-center ${activeTab === 'swaps' ? 'border-b-2 border-black' : ''}`}
+          className={`flex-1 py-3 items-center ${activeTab === 'swaps' ? 'border-b-2 border-black' : ''}`}
         >
           <Text style={{ fontSize: 20, fontWeight: '700' }}>{swapPosts.length}</Text>
           <Text style={{ fontSize: 14, color: activeTab === 'swaps' ? '#000' : '#6b7280' }}>Listed</Text>
         </TouchableOpacity>
-        <View className="flex-1 py-4 items-center border-l border-gray-100">
-          <Text style={{ fontSize: 20, fontWeight: '700', color: '#10b981' }}>
-            {profile.total_swaps || 0}
-          </Text>
-          <Text style={{ fontSize: 14, color: '#6b7280' }}>Completed</Text>
-        </View>
-        <View className="flex-1 py-4 items-center">
-          <Text style={{ fontSize: 20, fontWeight: '700' }}>
-            {profile.avg_rating?.toFixed(1) || '0.0'}
-          </Text>
-          <Text style={{ fontSize: 14, color: '#6b7280' }}>Rating</Text>
-        </View>
       </View>
     </View>
   );
@@ -183,6 +209,69 @@ export default function ProfileScreen({ navigation }: Props) {
     </View>
   );
 
+  const handlePostLongPress = (item: Post) => {
+    const isSwap = item.post_type === 'swap';
+    const isAvailable = item.availability === 'available';
+
+    const options: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [
+      { text: 'Cancel', style: 'cancel' },
+    ];
+
+    if (isSwap && isAvailable) {
+      options.push({
+        text: 'Mark as No Longer Available',
+        onPress: () => {
+          Alert.alert(
+            'Mark as Unavailable',
+            `Remove "${item.title}" from available swaps?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Mark Unavailable',
+                onPress: async () => {
+                  try {
+                    await updatePostAvailability(item.id, 'swapped');
+                    loadPosts();
+                  } catch {
+                    Alert.alert('Error', 'Could not update listing.');
+                  }
+                },
+              },
+            ]
+          );
+        },
+      });
+    }
+
+    options.push({
+      text: 'Delete Post',
+      style: 'destructive',
+      onPress: () => {
+        Alert.alert(
+          'Delete Post',
+          `Permanently delete "${item.title}"?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await deletePost(item.id);
+                  loadPosts();
+                } catch {
+                  Alert.alert('Error', 'Could not delete post.');
+                }
+              },
+            },
+          ]
+        );
+      },
+    });
+
+    Alert.alert(item.title, 'What would you like to do?', options);
+  };
+
   const renderBookItem = ({ item }: { item: Post }) => {
     const handlePress = () => {
       if (item.post_type === 'swap') {
@@ -195,6 +284,8 @@ export default function ProfileScreen({ navigation }: Props) {
     return (
       <TouchableOpacity
         onPress={handlePress}
+        onLongPress={() => handlePostLongPress(item)}
+        delayLongPress={400}
         style={{ width: BOOK_WIDTH, height: BOOK_HEIGHT, marginBottom: 8 }}
         className="mx-1"
       >
@@ -211,6 +302,20 @@ export default function ProfileScreen({ navigation }: Props) {
             height={BOOK_HEIGHT}
             style={{ borderRadius: 4 }}
           />
+        )}
+        {/* Unavailable overlay */}
+        {item.post_type === 'swap' && item.availability !== 'available' && (
+          <View style={{
+            ...{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            borderRadius: 4,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
+              {item.availability === 'pending' ? 'PENDING' : 'SWAPPED'}
+            </Text>
+          </View>
         )}
       </TouchableOpacity>
     );

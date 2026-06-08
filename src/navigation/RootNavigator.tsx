@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { supabase } from '../config/supabase';
 import { useAuthStore } from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { registerForPushNotifications } from '../services/notificationsService';
 
 // Heroicons - Outline (unfocused)
 import {
@@ -12,6 +13,7 @@ import {
   ArrowPathIcon,
   InboxIcon,
   UserIcon,
+  MagnifyingGlassIcon,
 } from 'react-native-heroicons/outline';
 
 // Heroicons - Solid (focused)
@@ -20,6 +22,7 @@ import {
   ArrowPathIcon as ArrowPathIconSolid,
   InboxIcon as InboxIconSolid,
   UserIcon as UserIconSolid,
+  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
 } from 'react-native-heroicons/solid';
 
 // Auth Screens
@@ -33,6 +36,7 @@ import FirstPostScreen from '../screens/onboarding/FirstPostScreen';
 
 // Main Screens
 import FeedScreen from '../screens/main/FeedScreen';
+import SearchScreen from '../screens/main/SearchScreen';
 import CreatePostScreen from '../screens/main/CreatePostScreen';
 import SocialPostScreen from '../screens/main/SocialPostScreen';
 import SwapPostScreen from '../screens/main/SwapPostScreen';
@@ -40,6 +44,7 @@ import BookDetailScreen from '../screens/main/BookDetailScreen';
 import PostDetailScreen from '../screens/main/PostDetailScreen';
 import InboxScreen from '../screens/main/InboxScreen';
 import ChatScreen from '../screens/main/ChatScreen';
+import NotificationsScreen from '../screens/main/NotificationsScreen';
 
 // Profile Screens
 import ProfileScreen from '../screens/profile/ProfileScreen';
@@ -60,6 +65,7 @@ export type OnboardingStackParamList = {
 
 export type MainTabsParamList = {
   Feed: undefined;
+  Search: undefined;
   Swaps: undefined;
   Inbox: { tab?: 'received' | 'sent' } | undefined;
   Profile: undefined;
@@ -76,6 +82,7 @@ export type MainStackParamList = {
   OtherUserProfile: { userId: string };
   Inbox: { tab?: 'received' | 'sent' };
   Chat: { swapId: string };
+  Notifications: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -199,6 +206,19 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          tabBarLabel: 'Search',
+          tabBarIcon: ({ focused, color, size }) =>
+            focused ? (
+              <MagnifyingGlassIconSolid color={color} size={size} />
+            ) : (
+              <MagnifyingGlassIcon color={color} size={size} />
+            ),
+        }}
+      />
+      <Tab.Screen
         name="Swaps"
         component={FeedScreen}
         initialParams={{ tab: 'swaps' }}
@@ -257,6 +277,7 @@ function MainNavigator() {
       <MainStack.Screen name="OtherUserProfile" component={OtherUserProfileScreen} />
       <MainStack.Screen name="Inbox" component={InboxScreen} />
       <MainStack.Screen name="Chat" component={ChatScreen} />
+      <MainStack.Screen name="Notifications" component={NotificationsScreen} />
     </MainStack.Navigator>
   );
 }
@@ -293,6 +314,7 @@ export default function RootNavigator() {
     if (session?.user) {
       fetchUserProfile(session.user.id);
       checkUserHasPosted(session.user.id);
+      registerForPushNotifications(session.user.id);
     } else {
       setHasPosted(null);
       setProfile(null);

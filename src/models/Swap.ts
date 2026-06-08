@@ -1,4 +1,13 @@
 export type SwapStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
+export type MeetupStatus = 'none' | 'proposed' | 'agreed';
+export type VenueCategory =
+  | 'coffee_shop'
+  | 'library'
+  | 'bookshop'
+  | 'bar'
+  | 'book_club'
+  | 'community_space'
+  | 'other';
 
 export interface Swap {
   id: string;
@@ -14,16 +23,27 @@ export interface Swap {
   accepted_at?: string;
   completed_at?: string;
 
+  // Meetup location coordination
+  meetup_status: MeetupStatus;
+  meetup_proposed_by?: string | null;
+  meetup_venue_name?: string | null;
+  meetup_venue_address?: string | null;
+  meetup_venue_category?: VenueCategory | null;
+  meetup_proposed_at?: string | null;
+  meetup_agreed_at?: string | null;
+
   // Joined data
   requester?: {
     id: string;
     username: string;
     avatar_url?: string;
+    city?: string | null;
   };
   owner?: {
     id: string;
     username: string;
     avatar_url?: string;
+    city?: string | null;
   };
   post?: {
     id: string;

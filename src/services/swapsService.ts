@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
-import { Swap, SwapStatus } from '../models/Swap';
+import { Swap, VenueCategory } from '../models/Swap';
+import { sendPushNotification } from './notificationsService';
 
 // Check if user can request a swap for a post
 export async function canRequestSwap(userId: string, postId: string): Promise<boolean> {
@@ -79,8 +80,8 @@ export async function getSwap(swapId: string): Promise<Swap | null> {
     .from('swaps')
     .select(`
       *,
-      requester:users!swaps_requester_id_fkey(id, username, avatar_url),
-      owner:users!swaps_owner_id_fkey(id, username, avatar_url),
+      requester:users!swaps_requester_id_fkey(id, username, avatar_url, city),
+      owner:users!swaps_owner_id_fkey(id, username, avatar_url, city),
       post:posts(id, title, author, cover_image_url, image_url)
     `)
     .eq('id', swapId)
@@ -104,6 +105,21 @@ export async function acceptSwap(swapId: string): Promise<void> {
     .eq('id', swapId);
 
   if (error) throw error;
+
+  // Notify the requester
+  const { data: swap } = await supabase
+    .from('swaps')
+    .select('requester_id, owner:users!swaps_owner_id_fkey(username)')
+    .eq('id', swapId)
+    .single();
+
+  if (swap) {
+    sendPushNotification(
+      swap.requester_id,
+      'Swap accepted! 🎉',
+      `@${(swap.owner as any)?.username} accepted your swap request`
+    ).catch(() => {});
+  }
 }
 
 // Decline a swap request (owner only)
@@ -163,27 +179,7 @@ export async function confirmSwapComplete(
       })
       .eq('id', swapId);
 
-    // Increment total_swaps for requester
-    const { data: requester } = await supabase
-      .from('users')
-      .select('total_swaps')
-      .eq('id', swap.requester_id)
-      .single();
-    await supabase
-      .from('users')
-      .update({ total_swaps: (requester?.total_swaps || 0) + 1 })
-      .eq('id', swap.requester_id);
-
-    // Increment total_swaps for owner
-    const { data: owner } = await supabase
-      .from('users')
-      .select('total_swaps')
-      .eq('id', swap.owner_id)
-      .single();
-    await supabase
-      .from('users')
-      .update({ total_swaps: (owner?.total_swaps || 0) + 1 })
-      .eq('id', swap.owner_id);
+    // total_swaps is incremented by DB trigger (009_total_swaps_trigger.sql)
 
     // Update post availability to 'swapped'
     await supabase
@@ -211,6 +207,92 @@ export async function hasPendingRequest(userId: string, postId: string): Promise
   }
 
   return data !== null;
+}
+
+// Propose a meetup location (or counter-propose by overwriting)
+export async function proposeMeetup(
+  swapId: string,
+  proposedById: string,
+  venueName: string,
+  venueCategory: VenueCategory,
+  venueAddress?: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('swaps')
+    .update({
+      meetup_status: 'proposed',
+      meetup_proposed_by: proposedById,
+      meetup_venue_name: venueName,
+      meetup_venue_category: venueCategory,
+      meetup_venue_address: venueAddress || null,
+      meetup_proposed_at: new Date().toISOString(),
+      meetup_agreed_at: null,
+    })
+    .eq('id', swapId);
+
+  if (error) throw error;
+
+  // Notify the other party
+  const { data: swap } = await supabase
+    .from('swaps')
+    .select('requester_id, owner_id, proposer:users!swaps_meetup_proposed_by_fkey(username)')
+    .eq('id', swapId)
+    .single();
+
+  if (swap) {
+    const toUserId = swap.requester_id === proposedById ? swap.owner_id : swap.requester_id;
+    sendPushNotification(
+      toUserId,
+      'Meetup suggested 📍',
+      `@${(swap.proposer as any)?.username} suggested ${venueName} as a meetup spot`
+    ).catch(() => {});
+  }
+}
+
+// Accept the proposed meetup location
+export async function acceptMeetup(swapId: string): Promise<void> {
+  const { error } = await supabase
+    .from('swaps')
+    .update({
+      meetup_status: 'agreed',
+      meetup_agreed_at: new Date().toISOString(),
+    })
+    .eq('id', swapId);
+
+  if (error) throw error;
+
+  // Notify the proposer
+  const { data: swap } = await supabase
+    .from('swaps')
+    .select('meetup_proposed_by, meetup_venue_name, accepter:users!swaps_owner_id_fkey(username)')
+    .eq('id', swapId)
+    .single();
+
+  if (swap?.meetup_proposed_by) {
+    sendPushNotification(
+      swap.meetup_proposed_by,
+      'Meetup confirmed ✅',
+      `Your suggested meetup at ${swap.meetup_venue_name} was accepted!`
+    ).catch(() => {});
+  }
+}
+
+// Reset meetup back to none (either party can clear)
+export async function clearMeetup(swapId: string): Promise<void> {
+  const { error } = await supabase
+    .from('swaps')
+    .update({
+      meetup_status: 'none',
+      meetup_proposed_by: null,
+      meetup_venue_name: null,
+      meetup_venue_category: null,
+      meetup_venue_address: null,
+      meetup_proposed_at: null,
+      meetup_agreed_at: null,
+    })
+    .eq('id', swapId);
+
+  if (error) throw error;
 }
 
 // Get unread message count for a swap

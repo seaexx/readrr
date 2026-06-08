@@ -58,36 +58,54 @@ function getCoverImageUrl(imageLinks: any, isbn: string | null): string | null {
   return null;
 }
 
+async function fetchBookFromOpenLibrary(isbn: string): Promise<BookInfo> {
+  const response = await fetch(
+    `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`
+  );
+  const json = await response.json();
+  const book = json[`ISBN:${isbn}`];
+
+  if (!book) throw new Error('Book not found on Open Library');
+
+  const description = typeof book.description === 'object'
+    ? book.description?.value
+    : book.description;
+
+  return {
+    isbn,
+    title: book.title || 'Unknown Title',
+    author: book.authors?.[0]?.name || 'Unknown Author',
+    cover_image_url: buildOpenLibraryUrl(isbn),
+    publisher: book.publishers?.[0]?.name,
+    publishedDate: book.publish_date,
+    description: description || undefined,
+  };
+}
+
 export async function fetchBookByISBN(isbn: string): Promise<BookInfo> {
+  // Try Google Books first
   const response = await fetch(
     `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`
   );
   const json = await response.json();
 
-  console.log('📚 Google Books API response:', JSON.stringify(json, null, 2));
-
   if (json.items && json.items.length > 0) {
     const item = json.items[0];
     const book = item.volumeInfo;
-    const bookId = item.id;
-
-    // Get cover URL - prefers Open Library if ISBN available
-    const coverUrl = getCoverImageUrl(book.imageLinks, isbn);
-
-    console.log('📸 Cover URL:', coverUrl);
 
     return {
       isbn,
       title: book.title || 'Unknown Title',
       author: book.authors?.join(', ') || 'Unknown Author',
-      cover_image_url: coverUrl,
+      cover_image_url: getCoverImageUrl(book.imageLinks, isbn),
       publisher: book.publisher,
       publishedDate: book.publishedDate,
       description: book.description,
     };
   }
 
-  throw new Error('Book not found');
+  // Fallback to Open Library
+  return fetchBookFromOpenLibrary(isbn);
 }
 
 export async function searchBooks(query: string): Promise<BookInfo[]> {

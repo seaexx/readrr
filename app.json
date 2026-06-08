@@ -28,7 +28,15 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-barcode-scanner"
+      "expo-barcode-scanner",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#38B6FF",
+          "sounds": []
+        }
+      ]
     ]
   }
 }

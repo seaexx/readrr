@@ -14,12 +14,13 @@ import { Image } from 'expo-image';
 import { supabase } from '../../config/supabase';
 import { getSocialPosts, getSwapPosts } from '../../services/postsService';
 import { likePost, unlikePost } from '../../services/engagementService';
+import { getUnreadCount } from '../../services/notificationsService';
 import { useAuthStore } from '../../store/authStore';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
-import { HeartIcon, ChatBubbleLeftIcon } from 'react-native-heroicons/outline';
-import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';
+import { HeartIcon, ChatBubbleLeftIcon, BellIcon } from 'react-native-heroicons/outline';
+import { HeartIcon as HeartIconSolid, BellIcon as BellIconSolid } from 'react-native-heroicons/solid';
 
 interface Props {
   navigation: any;
@@ -53,11 +54,15 @@ export default function FeedScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       loadPosts();
-    }, [activeTab])
+      if (session?.user.id) {
+        getUnreadCount(session.user.id).then(setUnreadNotifications).catch(() => {});
+      }
+    }, [activeTab, session?.user.id])
   );
 
   const getLikeCount = async (postId: string) => {
@@ -404,12 +409,37 @@ export default function FeedScreen({ navigation }: Props) {
           style={{ width: 100, height: 50 }}
           contentFit="contain"
         />
-        <TouchableOpacity
-          onPress={() => navigation.navigate('CreatePost')}
-          className="bg-primary px-4 py-2.5 rounded-full"
-        >
-          <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>+ Post</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {/* Bell icon */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            style={{ position: 'relative', padding: 4 }}
+          >
+            {unreadNotifications > 0 ? (
+              <BellIconSolid size={26} color="#38B6FF" />
+            ) : (
+              <BellIcon size={26} color="#6b7280" />
+            )}
+            {unreadNotifications > 0 && (
+              <View style={{
+                position: 'absolute', top: 0, right: 0,
+                backgroundColor: '#ef4444', borderRadius: 8,
+                minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CreatePost')}
+            className="bg-primary px-4 py-2.5 rounded-full"
+          >
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>+ Post</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tabs */}
