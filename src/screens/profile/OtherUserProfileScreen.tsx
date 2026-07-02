@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
@@ -24,6 +25,9 @@ import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import PostCard from '../../components/PostCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ReportModal from '../../components/ReportModal';
+import { blockUser, unblockUser, isBlocked } from '../../services/blockService';
+import { reportUser } from '../../services/reportService';
 
 interface Props {
   navigation: any;
@@ -42,6 +46,8 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   const [followLoading, setFollowLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [blocked, setBlocked] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,14 +67,16 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
       setPosts(postsData);
 
       if (session?.user.id) {
-        const [followStatus, followers, followingCnt] = await Promise.all([
+        const [followStatus, followers, followingCnt, blockStatus] = await Promise.all([
           isFollowing(session.user.id, userId),
           getFollowerCount(userId),
           getFollowingCount(userId),
+          isBlocked(session.user.id, userId),
         ]);
         setFollowing(followStatus);
         setFollowerCount(followers);
         setFollowingCount(followingCnt);
+        setBlocked(blockStatus);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -101,6 +109,72 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     } finally {
       setFollowLoading(false);
     }
+  };
+
+  const handleMenuPress = () => {
+    const options = [
+      blocked ? 'Unblock User' : 'Block User',
+      'Report User',
+      'Cancel',
+    ];
+    Alert.alert(undefined as any, undefined as any, [
+      {
+        text: options[0],
+        style: 'destructive',
+        onPress: () => {
+          if (blocked) {
+            handleUnblock();
+          } else {
+            handleBlock();
+          }
+        },
+      },
+      { text: 'Report User', onPress: () => setShowReportModal(true) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleBlock = () => {
+    Alert.alert(
+      'Block User',
+      `Are you sure you want to block @${user?.username}? You won't see each other's posts or be able to swap.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            if (!session?.user.id) return;
+            try {
+              await blockUser(session.user.id, userId);
+              setBlocked(true);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Block error:', error);
+              Alert.alert('Error', 'Failed to block user.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUnblock = async () => {
+    if (!session?.user.id) return;
+    try {
+      await unblockUser(session.user.id, userId);
+      setBlocked(false);
+    } catch (error) {
+      console.error('Unblock error:', error);
+      Alert.alert('Error', 'Failed to unblock user.');
+    }
+  };
+
+  const handleReport = async (reason: string, details: string) => {
+    if (!session?.user.id) return;
+    await reportUser(session.user.id, userId, reason, details);
+    setShowReportModal(false);
+    Alert.alert('Report Submitted', 'Thank you. We will review this report.');
   };
 
   if (loading || !user) {
@@ -187,7 +261,9 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
         <Text className="flex-1 text-center font-semibold text-lg">
           @{user.username}
         </Text>
-        <View style={{ width: 50 }} />
+        <TouchableOpacity onPress={handleMenuPress} style={{ width: 50, alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 22, color: '#6b7280' }}>•••</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -200,6 +276,12 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
+      />
+      <ReportModal
+        visible={showReportModal}
+        label="User"
+        onSubmit={handleReport}
+        onCancel={() => setShowReportModal(false)}
       />
     </SafeAreaView>
   );

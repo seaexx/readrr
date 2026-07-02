@@ -14,9 +14,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 interface Props {
   post: Post;
   onPress?: () => void;
+  onBlock?: (userId: string) => void;
+  onReport?: (postId: string) => void;
 }
 
-export default function PostCard({ post, onPress }: Props) {
+export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
   const navigation = useNavigation<any>();
   const session = useAuthStore((state) => state.session);
 
@@ -104,6 +106,34 @@ export default function PostCard({ post, onPress }: Props) {
     }
   };
 
+  const isOwnPost = post.user?.id === session?.user.id;
+
+  const handleMenuPress = () => {
+    Alert.alert(undefined as any, undefined as any, [
+      {
+        text: 'Report Post',
+        onPress: () => onReport?.(post.id),
+      },
+      {
+        text: 'Block User',
+        style: 'destructive',
+        onPress: () => {
+          if (post.user?.id) {
+            Alert.alert(
+              'Block User',
+              `Block @${post.user.username}? You won't see each other's posts or be able to swap.`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Block', style: 'destructive', onPress: () => onBlock?.(post.user!.id) },
+              ]
+            );
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const handlePostPress = () => {
     if (onPress) {
       onPress();
@@ -146,6 +176,11 @@ export default function PostCard({ post, onPress }: Props) {
           <View className="bg-green-100 px-3 py-1.5 rounded-full">
             <Text style={{ fontSize: 13, fontWeight: '500', color: '#15803d' }}>Swap</Text>
           </View>
+        )}
+        {!isOwnPost && (
+          <TouchableOpacity onPress={handleMenuPress} style={{ paddingLeft: 8, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 18, color: '#9ca3af', fontWeight: '700' }}>•••</Text>
+          </TouchableOpacity>
         )}
       </TouchableOpacity>
 
