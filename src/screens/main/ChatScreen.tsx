@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Alert,
   ActivityIndicator,
@@ -57,6 +58,7 @@ export default function ChatScreen({ navigation }: Props) {
   const [completing, setCompleting] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showMeetupModal, setShowMeetupModal] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [meetupLoading, setMeetupLoading] = useState(false);
   const [isCounterProposal, setIsCounterProposal] = useState(false);
 
@@ -65,6 +67,14 @@ export default function ChatScreen({ navigation }: Props) {
   useEffect(() => {
     loadData();
   }, [swapId]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   // Subscribe to new messages
   useEffect(() => {
@@ -590,7 +600,7 @@ export default function ChatScreen({ navigation }: Props) {
       {renderMeetupCard()}
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
         keyboardVerticalOffset={0}
       >
@@ -639,7 +649,7 @@ export default function ChatScreen({ navigation }: Props) {
 
         {/* Message input */}
         {anyoneConfirmed ? (
-          <View className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+          <View className="px-4 border-t border-gray-100 bg-gray-50" style={{ paddingTop: 16, paddingBottom: keyboardVisible ? 16 : 60 }}>
             <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
               {myConfirmation
                 ? 'Chat disabled. Waiting for other person to confirm swap.'
@@ -647,7 +657,7 @@ export default function ChatScreen({ navigation }: Props) {
             </Text>
           </View>
         ) : (
-          <View className="flex-row items-end px-4 py-3 border-t border-gray-100 bg-white">
+          <View className="flex-row items-end px-4 border-t border-gray-100 bg-white" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>
             <TextInput
               value={newMessage}
               onChangeText={setNewMessage}

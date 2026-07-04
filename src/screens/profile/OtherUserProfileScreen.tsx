@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,13 +12,6 @@ import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { getUserPosts } from '../../services/postsService';
-import {
-  followUser,
-  unfollowUser,
-  isFollowing,
-  getFollowerCount,
-  getFollowingCount,
-} from '../../services/followsService';
 import { User } from '../../models/User';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
@@ -42,10 +34,6 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
 
@@ -67,15 +55,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
       setPosts(postsData);
 
       if (session?.user.id) {
-        const [followStatus, followers, followingCnt, blockStatus] = await Promise.all([
-          isFollowing(session.user.id, userId),
-          getFollowerCount(userId),
-          getFollowingCount(userId),
-          isBlocked(session.user.id, userId),
-        ]);
-        setFollowing(followStatus);
-        setFollowerCount(followers);
-        setFollowingCount(followingCnt);
+        const blockStatus = await isBlocked(session.user.id, userId);
         setBlocked(blockStatus);
       }
     } catch (error) {
@@ -89,26 +69,6 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
-  };
-
-  const handleFollowToggle = async () => {
-    if (!session?.user.id) return;
-    setFollowLoading(true);
-    try {
-      if (following) {
-        await unfollowUser(session.user.id, userId);
-        setFollowing(false);
-        setFollowerCount((c) => c - 1);
-      } else {
-        await followUser(session.user.id, userId);
-        setFollowing(true);
-        setFollowerCount((c) => c + 1);
-      }
-    } catch (error) {
-      console.error('Follow toggle error:', error);
-    } finally {
-      setFollowLoading(false);
-    }
   };
 
   const handleMenuPress = () => {
@@ -192,40 +152,10 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
           <Text className="text-gray-700 text-center mt-3 px-4">{user.bio}</Text>
         )}
 
-        {/* Follow button */}
-        <TouchableOpacity
-          onPress={handleFollowToggle}
-          disabled={followLoading}
-          style={{
-            marginTop: 16,
-            paddingHorizontal: 32,
-            paddingVertical: 10,
-            borderRadius: 999,
-            backgroundColor: following ? '#fff' : '#38B6FF',
-            borderWidth: 1,
-            borderColor: following ? '#d1d5db' : '#38B6FF',
-          }}
-        >
-          {followLoading ? (
-            <ActivityIndicator color={following ? '#6b7280' : '#fff'} size="small" />
-          ) : (
-            <Text style={{ fontSize: 15, fontWeight: '600', color: following ? '#374151' : '#fff' }}>
-              {following ? 'Following' : 'Follow'}
-            </Text>
-          )}
-        </TouchableOpacity>
       </View>
 
       {/* Stats */}
       <View className="flex-row justify-around py-4 border-y border-gray-200 mx-6">
-        <View className="items-center">
-          <Text className="text-2xl font-bold">{followerCount}</Text>
-          <Text className="text-gray-500">Followers</Text>
-        </View>
-        <View className="items-center">
-          <Text className="text-2xl font-bold">{followingCount}</Text>
-          <Text className="text-gray-500">Following</Text>
-        </View>
         <View className="items-center">
           <Text className="text-2xl font-bold">{user.total_swaps}</Text>
           <Text className="text-gray-500">Swaps</Text>

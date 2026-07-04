@@ -344,22 +344,12 @@ export default function FeedScreen({ navigation }: Props) {
             overflow: 'hidden',
           }}
         >
-          {post.post_type === 'swap' && post.image_url ? (
-            // Swap post with user photo - use regular Image
-            <Image
-              source={{ uri: post.image_url }}
-              style={{ width: CARD_WIDTH, height: COVER_HEIGHT }}
-              contentFit="cover"
-            />
-          ) : (
-            // Social post or swap without photo - use BookCover with zoom fallback
-            <BookCover
-              coverUrl={post.cover_image_url}
-              width={CARD_WIDTH}
-              height={COVER_HEIGHT}
-              style={{ borderRadius: 8 }}
-            />
-          )}
+          <BookCover
+            coverUrl={post.cover_image_url}
+            width={CARD_WIDTH}
+            height={COVER_HEIGHT}
+            style={{ borderRadius: 8 }}
+          />
         </TouchableOpacity>
 
         {/* Book Title - Dynamic font size */}
@@ -457,37 +447,27 @@ export default function FeedScreen({ navigation }: Props) {
           style={{ width: 100, height: 50 }}
           contentFit="contain"
         />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {/* Bell icon */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Notifications')}
-            style={{ position: 'relative', padding: 4 }}
-          >
-            {unreadNotifications > 0 ? (
-              <BellIconSolid size={26} color="#38B6FF" />
-            ) : (
-              <BellIcon size={26} color="#6b7280" />
-            )}
-            {unreadNotifications > 0 && (
-              <View style={{
-                position: 'absolute', top: 0, right: 0,
-                backgroundColor: '#ef4444', borderRadius: 8,
-                minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('CreatePost')}
-            className="bg-primary px-4 py-2.5 rounded-full"
-          >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>+ Post</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Notifications')}
+          style={{ position: 'relative', padding: 4 }}
+        >
+          {unreadNotifications > 0 ? (
+            <BellIconSolid size={26} color="#38B6FF" />
+          ) : (
+            <BellIcon size={26} color="#6b7280" />
+          )}
+          {unreadNotifications > 0 && (
+            <View style={{
+              position: 'absolute', top: 0, right: 0,
+              backgroundColor: '#ef4444', borderRadius: 8,
+              minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Tabs */}

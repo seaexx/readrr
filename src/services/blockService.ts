@@ -6,17 +6,6 @@ export async function blockUser(blockerId: string, blockedId: string): Promise<v
     .insert({ blocker_id: blockerId, blocked_id: blockedId });
 
   if (error) throw error;
-
-  // Auto-unfollow in both directions
-  await supabase
-    .from('follows')
-    .delete()
-    .match({ follower_id: blockerId, following_id: blockedId });
-
-  await supabase
-    .from('follows')
-    .delete()
-    .match({ follower_id: blockedId, following_id: blockerId });
 }
 
 export async function unblockUser(blockerId: string, blockedId: string): Promise<void> {

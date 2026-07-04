@@ -10,7 +10,7 @@ import { registerForPushNotifications } from '../services/notificationsService';
 // Heroicons - Outline (unfocused)
 import {
   HomeIcon,
-  ArrowPathIcon,
+  PlusCircleIcon,
   InboxIcon,
   UserIcon,
   MagnifyingGlassIcon,
@@ -19,7 +19,7 @@ import {
 // Heroicons - Solid (focused)
 import {
   HomeIcon as HomeIconSolid,
-  ArrowPathIcon as ArrowPathIconSolid,
+  PlusCircleIcon as PlusCircleIconSolid,
   InboxIcon as InboxIconSolid,
   UserIcon as UserIconSolid,
   MagnifyingGlassIcon as MagnifyingGlassIconSolid,
@@ -219,17 +219,20 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Swaps"
-        component={FeedScreen}
-        initialParams={{ tab: 'swaps' }}
+        name="Post"
+        component={CreatePostScreen}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('CreatePost');
+          },
+        })}
         options={{
-          tabBarLabel: 'Swaps',
-          tabBarIcon: ({ focused, color, size }) =>
-            focused ? (
-              <ArrowPathIconSolid color={color} size={size} />
-            ) : (
-              <ArrowPathIcon color={color} size={size} />
-            ),
+          tabBarLabel: 'Post',
+          tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
+          tabBarIcon: ({ color, size }) => (
+            <PlusCircleIcon color={color} size={size + 4} />
+          ),
         }}
       />
       <Tab.Screen

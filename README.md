@@ -27,15 +27,11 @@ A book-swapping social app built with React Native, Expo, and Supabase. Discover
 - Agreed meetup stays pinned above the chat for both users
 
 ### Search
-- Search readers by username
-- Search books by title or author via Google Books API
 - Search posts by book title or author
 
-### Profiles & Social
-- Follow / unfollow other readers
-- Follower and following counts
+### Profiles
 - Star ratings after each completed swap (1–5 stars with optional comment)
-- Average rating displayed on profiles and search results
+- Average rating displayed on profiles
 - Post and listing management (delete from profile)
 
 ### Safety & Moderation
