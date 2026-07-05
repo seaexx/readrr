@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Alert,
   StyleSheet,
@@ -55,12 +56,21 @@ export default function PostDetailScreen({ navigation }: Props) {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
     loadData();
     const unsubscribe = subscribeToComments();
     return unsubscribe;
   }, [postId]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   useEffect(() => {
     if (post?.isbn) {
@@ -223,7 +233,7 @@ export default function PostDetailScreen({ navigation }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
         keyboardVerticalOffset={0}
       >
@@ -395,7 +405,7 @@ export default function PostDetailScreen({ navigation }: Props) {
         </View>
 
         {/* Comment Input */}
-        <View className="border-t border-gray-200 px-4 py-3 flex-row items-center bg-white">
+        <View className="border-t border-gray-200 px-4 flex-row items-center bg-white" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>
           <TextInput
             placeholder="Add a comment..."
             value={newComment}

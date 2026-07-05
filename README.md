@@ -27,18 +27,23 @@ A book-swapping social app built with React Native, Expo, and Supabase. Discover
 - Agreed meetup stays pinned above the chat for both users
 
 ### Search
-- Search readers by username
-- Search books by title or author via Google Books API
 - Search posts by book title or author
 
-### Profiles & Social
-- Follow / unfollow other readers
-- Follower and following counts
+### Profiles
 - Star ratings after each completed swap (1–5 stars with optional comment)
-- Average rating displayed on profiles and search results
+- Average rating displayed on profiles
+- Post and listing management (delete from profile)
+
+### Safety & Moderation
+- Block a user — mutual, hides posts, prevents swaps and messages
+- Report a user or post with reason categories (spam, harassment, inappropriate, other) + optional details
+- Three-dot menu on profiles and posts
 
 ### Push Notifications
 - Swap accepted, new chat message, meetup proposed and confirmed
+
+### In-App Notifications
+- Notification centre screen with read/unread state and mark-all-read
 
 ---
 
@@ -89,6 +94,9 @@ npm install
 # supabase/migrations/006_follows_schema.sql
 # supabase/migrations/007_ratings_schema.sql
 # supabase/migrations/008_meetup_location.sql
+# supabase/migrations/009_total_swaps_trigger.sql
+# supabase/migrations/010_notifications_table.sql
+# supabase/migrations/011_blocks_reports.sql
 
 # Start the app
 npm start
@@ -108,28 +116,24 @@ Push notifications require a real device (not a simulator).
 
 ```
 src/
-├── components/       # Shared UI components
+├── components/       # Shared UI (Avatar, BookCover, PostCard, BarcodeScanner, MeetupModal, RatingModal, etc.)
 ├── config/           # Supabase client
-├── models/           # TypeScript interfaces
-├── navigation/       # React Navigation setup
+├── models/           # TypeScript interfaces (User, Post, Swap, Message)
+├── navigation/       # React Navigation setup (bottom tabs + stack)
 ├── screens/
 │   ├── auth/         # Sign in, sign up, welcome
-│   ├── main/         # Feed, search, inbox, chat, book detail
+│   ├── main/         # Feed, search, inbox, chat, book detail, notifications, post creation
 │   ├── onboarding/   # Profile setup, first post
 │   └── profile/      # Own profile, other user profile, edit
-├── services/         # API and Supabase service functions
-└── store/            # Zustand auth store
+├── services/         # Supabase service functions (posts, swaps, messages, ratings, follows, notifications, books, storage)
+├── store/            # Zustand auth store
+└── utils/            # Image compression, validation
 supabase/
-└── migrations/       # SQL migration files
+└── migrations/       # SQL migration files (001–010)
 ```
 
 ---
 
 ## Roadmap
 
-- [ ] Post deletion and listing management
 - [ ] Nearby books feed (location-based)
-- [ ] Notification centre screen
-- [ ] Report / block user
-- [ ] Following-based feed filter
-- [ ] Stripe subscription tier

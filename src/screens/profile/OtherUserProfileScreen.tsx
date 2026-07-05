@@ -5,25 +5,21 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { getUserPosts } from '../../services/postsService';
-import {
-  followUser,
-  unfollowUser,
-  isFollowing,
-  getFollowerCount,
-  getFollowingCount,
-} from '../../services/followsService';
 import { User } from '../../models/User';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import PostCard from '../../components/PostCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ReportModal from '../../components/ReportModal';
+import { blockUser, unblockUser, isBlocked } from '../../services/blockService';
+import { reportUser } from '../../services/reportService';
 
 interface Props {
   navigation: any;
@@ -38,10 +34,8 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
+  const [blocked, setBlocked] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,14 +55,8 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
       setPosts(postsData);
 
       if (session?.user.id) {
-        const [followStatus, followers, followingCnt] = await Promise.all([
-          isFollowing(session.user.id, userId),
-          getFollowerCount(userId),
-          getFollowingCount(userId),
-        ]);
-        setFollowing(followStatus);
-        setFollowerCount(followers);
-        setFollowingCount(followingCnt);
+        const blockStatus = await isBlocked(session.user.id, userId);
+        setBlocked(blockStatus);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -83,24 +71,70 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     setRefreshing(false);
   };
 
-  const handleFollowToggle = async () => {
+  const handleMenuPress = () => {
+    const options = [
+      blocked ? 'Unblock User' : 'Block User',
+      'Report User',
+      'Cancel',
+    ];
+    Alert.alert(undefined as any, undefined as any, [
+      {
+        text: options[0],
+        style: 'destructive',
+        onPress: () => {
+          if (blocked) {
+            handleUnblock();
+          } else {
+            handleBlock();
+          }
+        },
+      },
+      { text: 'Report User', onPress: () => setShowReportModal(true) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleBlock = () => {
+    Alert.alert(
+      'Block User',
+      `Are you sure you want to block @${user?.username}? You won't see each other's posts or be able to swap.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            if (!session?.user.id) return;
+            try {
+              await blockUser(session.user.id, userId);
+              setBlocked(true);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Block error:', error);
+              Alert.alert('Error', 'Failed to block user.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUnblock = async () => {
     if (!session?.user.id) return;
-    setFollowLoading(true);
     try {
-      if (following) {
-        await unfollowUser(session.user.id, userId);
-        setFollowing(false);
-        setFollowerCount((c) => c - 1);
-      } else {
-        await followUser(session.user.id, userId);
-        setFollowing(true);
-        setFollowerCount((c) => c + 1);
-      }
+      await unblockUser(session.user.id, userId);
+      setBlocked(false);
     } catch (error) {
-      console.error('Follow toggle error:', error);
-    } finally {
-      setFollowLoading(false);
+      console.error('Unblock error:', error);
+      Alert.alert('Error', 'Failed to unblock user.');
     }
+  };
+
+  const handleReport = async (reason: string, details: string) => {
+    if (!session?.user.id) return;
+    await reportUser(session.user.id, userId, reason, details);
+    setShowReportModal(false);
+    Alert.alert('Report Submitted', 'Thank you. We will review this report.');
   };
 
   if (loading || !user) {
@@ -118,40 +152,10 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
           <Text className="text-gray-700 text-center mt-3 px-4">{user.bio}</Text>
         )}
 
-        {/* Follow button */}
-        <TouchableOpacity
-          onPress={handleFollowToggle}
-          disabled={followLoading}
-          style={{
-            marginTop: 16,
-            paddingHorizontal: 32,
-            paddingVertical: 10,
-            borderRadius: 999,
-            backgroundColor: following ? '#fff' : '#38B6FF',
-            borderWidth: 1,
-            borderColor: following ? '#d1d5db' : '#38B6FF',
-          }}
-        >
-          {followLoading ? (
-            <ActivityIndicator color={following ? '#6b7280' : '#fff'} size="small" />
-          ) : (
-            <Text style={{ fontSize: 15, fontWeight: '600', color: following ? '#374151' : '#fff' }}>
-              {following ? 'Following' : 'Follow'}
-            </Text>
-          )}
-        </TouchableOpacity>
       </View>
 
       {/* Stats */}
       <View className="flex-row justify-around py-4 border-y border-gray-200 mx-6">
-        <View className="items-center">
-          <Text className="text-2xl font-bold">{followerCount}</Text>
-          <Text className="text-gray-500">Followers</Text>
-        </View>
-        <View className="items-center">
-          <Text className="text-2xl font-bold">{followingCount}</Text>
-          <Text className="text-gray-500">Following</Text>
-        </View>
         <View className="items-center">
           <Text className="text-2xl font-bold">{user.total_swaps}</Text>
           <Text className="text-gray-500">Swaps</Text>
@@ -187,7 +191,9 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
         <Text className="flex-1 text-center font-semibold text-lg">
           @{user.username}
         </Text>
-        <View style={{ width: 50 }} />
+        <TouchableOpacity onPress={handleMenuPress} style={{ width: 50, alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 22, color: '#6b7280' }}>•••</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -200,6 +206,12 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
+      />
+      <ReportModal
+        visible={showReportModal}
+        label="User"
+        onSubmit={handleReport}
+        onCancel={() => setShowReportModal(false)}
       />
     </SafeAreaView>
   );

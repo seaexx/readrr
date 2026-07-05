@@ -9,6 +9,7 @@ import { getReceivedSwaps, getSentSwaps, acceptSwap, declineSwap } from '../../s
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { getBlockedUserIds } from '../../services/blockService';
 
 interface Props {
   navigation: any;
@@ -72,12 +73,14 @@ export default function InboxScreen({ navigation }: Props) {
     if (!session?.user.id) return;
 
     try {
-      const [received, sent] = await Promise.all([
+      const [received, sent, blockedIds] = await Promise.all([
         getReceivedSwaps(session.user.id),
         getSentSwaps(session.user.id),
+        getBlockedUserIds(session.user.id),
       ]);
-      setReceivedSwaps(received);
-      setSentSwaps(sent);
+      const blockedSet = new Set(blockedIds);
+      setReceivedSwaps(received.filter((s) => !blockedSet.has(s.requester_id)));
+      setSentSwaps(sent.filter((s) => !blockedSet.has(s.owner_id)));
     } catch (error) {
       console.error('Error loading swaps:', error);
     } finally {

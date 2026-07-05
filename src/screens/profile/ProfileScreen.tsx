@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   Alert,
-  FlatList,
+  ScrollView,
   RefreshControl,
   Dimensions,
 } from 'react-native';
@@ -14,7 +14,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { getUserPosts, deletePost, updatePostAvailability } from '../../services/postsService';
-import { getFollowerCount, getFollowingCount } from '../../services/followsService';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
@@ -32,14 +31,10 @@ export default function ProfileScreen({ navigation }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'swaps'>('posts');
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-
   useFocusEffect(
     useCallback(() => {
       if (profile) {
         loadPosts();
-        loadFollowCounts();
       }
     }, [profile?.id])
   );
@@ -54,20 +49,6 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   };
 
-  const loadFollowCounts = async () => {
-    if (!profile) return;
-    try {
-      const [followers, following] = await Promise.all([
-        getFollowerCount(profile.id),
-        getFollowingCount(profile.id),
-      ]);
-      setFollowerCount(followers);
-      setFollowingCount(following);
-    } catch (error) {
-      console.error('Error loading follow counts:', error);
-    }
-  };
-
   // Filter posts based on active tab
   const socialPosts = posts.filter((p) => p.post_type === 'social');
   const swapPosts = posts.filter((p) => p.post_type === 'swap');
@@ -75,7 +56,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadPosts(), loadFollowCounts()]);
+    await loadPosts();
     setRefreshing(false);
   };
 
@@ -155,16 +136,8 @@ export default function ProfileScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Follow counts */}
+      {/* Stats */}
       <View className="flex-row justify-around py-3 border-b border-gray-100 mx-6">
-        <View className="items-center">
-          <Text style={{ fontSize: 18, fontWeight: '700' }}>{followerCount}</Text>
-          <Text style={{ fontSize: 13, color: '#6b7280' }}>Followers</Text>
-        </View>
-        <View className="items-center">
-          <Text style={{ fontSize: 18, fontWeight: '700' }}>{followingCount}</Text>
-          <Text style={{ fontSize: 13, color: '#6b7280' }}>Following</Text>
-        </View>
         <View className="items-center">
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#10b981' }}>{profile.total_swaps || 0}</Text>
           <Text style={{ fontSize: 13, color: '#6b7280' }}>Swaps</Text>
@@ -272,53 +245,103 @@ export default function ProfileScreen({ navigation }: Props) {
     Alert.alert(item.title, 'What would you like to do?', options);
   };
 
-  const renderBookItem = ({ item }: { item: Post }) => {
-    const handlePress = () => {
-      if (item.post_type === 'swap') {
-        navigation.navigate('BookDetail', { postId: item.id });
-      } else {
-        navigation.navigate('PostDetail', { postId: item.id });
-      }
-    };
+  const renderShelf = () => (
+    <View style={{
+      height: 14,
+      marginHorizontal: 8,
+      backgroundColor: '#8B6914',
+      borderRadius: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 5,
+    }}>
+      <View style={{
+        height: 4,
+        backgroundColor: '#A67C00',
+        borderTopLeftRadius: 2,
+        borderTopRightRadius: 2,
+      }} />
+      <View style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        backgroundColor: '#6B5200',
+        borderBottomLeftRadius: 2,
+        borderBottomRightRadius: 2,
+      }} />
+    </View>
+  );
 
-    return (
-      <TouchableOpacity
-        onPress={handlePress}
-        onLongPress={() => handlePostLongPress(item)}
-        delayLongPress={400}
-        style={{ width: BOOK_WIDTH, height: BOOK_HEIGHT, marginBottom: 8 }}
-        className="mx-1"
-      >
-        {item.post_type === 'swap' && item.image_url ? (
-          <Image
-            source={{ uri: item.image_url }}
-            style={{ width: '100%', height: '100%', borderRadius: 4 }}
-            contentFit="cover"
-          />
-        ) : (
-          <BookCover
-            coverUrl={item.cover_image_url}
-            width={BOOK_WIDTH}
-            height={BOOK_HEIGHT}
-            style={{ borderRadius: 4 }}
-          />
-        )}
-        {/* Unavailable overlay */}
-        {item.post_type === 'swap' && item.availability !== 'available' && (
-          <View style={{
-            ...{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            borderRadius: 4,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
-              {item.availability === 'pending' ? 'PENDING' : 'SWAPPED'}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
+  const renderBookRow = (row: Post[], rowIndex: number) => (
+    <View key={rowIndex}>
+      <View style={{ flexDirection: 'row', paddingHorizontal: 12, justifyContent: 'flex-start' }}>
+        {row.map((item) => {
+          const handlePress = () => {
+            if (item.post_type === 'swap') {
+              navigation.navigate('BookDetail', { postId: item.id });
+            } else {
+              navigation.navigate('PostDetail', { postId: item.id });
+            }
+          };
+
+          return (
+            <TouchableOpacity
+              key={item.id}
+              onPress={handlePress}
+              onLongPress={() => handlePostLongPress(item)}
+              delayLongPress={400}
+              style={{ width: BOOK_WIDTH, height: BOOK_HEIGHT, marginHorizontal: 4 }}
+            >
+              {item.post_type === 'swap' && item.image_url ? (
+                <Image
+                  source={{ uri: item.image_url }}
+                  style={{ width: '100%', height: '100%', borderRadius: 4 }}
+                  contentFit="cover"
+                />
+              ) : (
+                <BookCover
+                  coverUrl={item.cover_image_url}
+                  width={BOOK_WIDTH}
+                  height={BOOK_HEIGHT}
+                  style={{ borderRadius: 4 }}
+                />
+              )}
+              {item.post_type === 'swap' && item.availability !== 'available' && (
+                <View style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.45)',
+                  borderRadius: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
+                    {item.availability === 'pending' ? 'PENDING' : 'SWAPPED'}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {renderShelf()}
+    </View>
+  );
+
+  const getRows = (data: Post[]) => {
+    const rows: Post[][] = [];
+    for (let i = 0; i < data.length; i += 3) {
+      rows.push(data.slice(i, i + 3));
+    }
+    return rows;
+  };
+
+  const renderBooks = () => {
+    const rows = getRows(filteredPosts);
+    return <View>{rows.map((row, i) => renderBookRow(row, i))}</View>;
   };
 
   const renderFooter = () => (
@@ -356,20 +379,16 @@ export default function ProfileScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredPosts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderBookItem}
-        numColumns={3}
-        columnWrapperStyle={{ paddingHorizontal: 12, justifyContent: 'flex-start' }}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        showsVerticalScrollIndicator={false}
-      />
+      >
+        {renderHeader()}
+        {filteredPosts.length === 0 ? renderEmpty() : renderBooks()}
+        {renderFooter()}
+      </ScrollView>
     </SafeAreaView>
   );
 }

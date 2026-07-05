@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,6 +20,9 @@ import { useAuthStore } from '../../store/authStore';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
+import ReportModal from '../../components/ReportModal';
+import { blockUser, getBlockedUserIds } from '../../services/blockService';
+import { reportPost } from '../../services/reportService';
 import { HeartIcon, ChatBubbleLeftIcon, BellIcon } from 'react-native-heroicons/outline';
 import { HeartIcon as HeartIconSolid, BellIcon as BellIconSolid } from 'react-native-heroicons/solid';
 
@@ -55,15 +59,48 @@ export default function FeedScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [blockedIds, setBlockedIds] = useState<string[]>([]);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      loadPosts();
       if (session?.user.id) {
+        getBlockedUserIds(session.user.id).then((ids) => {
+          setBlockedIds(ids);
+          loadPostsWithBlocked(ids);
+        }).catch(() => loadPostsWithBlocked([]));
         getUnreadCount(session.user.id).then(setUnreadNotifications).catch(() => {});
+      } else {
+        loadPostsWithBlocked([]);
       }
     }, [activeTab, session?.user.id])
   );
+
+  const loadPostsWithBlocked = async (blocked: string[]) => {
+    setLoading(true);
+    try {
+      const data =
+        activeTab === 'feed' ? await getSocialPosts(20, 0, blocked) : await getSwapPosts(20, 0, blocked);
+
+      const postsWithCounts = await Promise.all(
+        (data || []).map(async (post) => {
+          const [likeCount, commentCount, hasLiked] = await Promise.all([
+            getLikeCount(post.id),
+            getCommentCount(post.id),
+            checkIfLiked(post.id),
+          ]);
+          return { ...post, likeCount, commentCount, hasLiked };
+        })
+      );
+
+      setPosts(postsWithCounts);
+    } catch (error) {
+      console.error('Error loading posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getLikeCount = async (postId: string) => {
     const { count } = await supabase
@@ -91,43 +128,11 @@ export default function FeedScreen({ navigation }: Props) {
     return !!data;
   };
 
-  const loadPosts = async () => {
-    setLoading(true);
-    try {
-      const data =
-        activeTab === 'feed' ? await getSocialPosts() : await getSwapPosts();
-
-      // Load engagement counts for each post
-      const postsWithCounts = await Promise.all(
-        (data || []).map(async (post) => {
-          const [likeCount, commentCount, hasLiked] = await Promise.all([
-            getLikeCount(post.id),
-            getCommentCount(post.id),
-            checkIfLiked(post.id),
-          ]);
-
-          return {
-            ...post,
-            likeCount,
-            commentCount,
-            hasLiked,
-          };
-        })
-      );
-
-      setPosts(postsWithCounts);
-    } catch (error) {
-      console.error('Error loading posts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       const data =
-        activeTab === 'feed' ? await getSocialPosts() : await getSwapPosts();
+        activeTab === 'feed' ? await getSocialPosts(20, 0, blockedIds) : await getSwapPosts(20, 0, blockedIds);
 
       const postsWithCounts = await Promise.all(
         (data || []).map(async (post) => {
@@ -136,13 +141,7 @@ export default function FeedScreen({ navigation }: Props) {
             getCommentCount(post.id),
             checkIfLiked(post.id),
           ]);
-
-          return {
-            ...post,
-            likeCount,
-            commentCount,
-            hasLiked,
-          };
+          return { ...post, likeCount, commentCount, hasLiked };
         })
       );
 
@@ -161,8 +160,8 @@ export default function FeedScreen({ navigation }: Props) {
     try {
       const data =
         activeTab === 'feed'
-          ? await getSocialPosts(20, posts.length)
-          : await getSwapPosts(20, posts.length);
+          ? await getSocialPosts(20, posts.length, blockedIds)
+          : await getSwapPosts(20, posts.length, blockedIds);
 
       const postsWithCounts = await Promise.all(
         (data || []).map(async (post) => {
@@ -171,13 +170,7 @@ export default function FeedScreen({ navigation }: Props) {
             getCommentCount(post.id),
             checkIfLiked(post.id),
           ]);
-
-          return {
-            ...post,
-            likeCount,
-            commentCount,
-            hasLiked,
-          };
+          return { ...post, likeCount, commentCount, hasLiked };
         })
       );
 
@@ -187,6 +180,32 @@ export default function FeedScreen({ navigation }: Props) {
     } finally {
       setLoadingMore(false);
     }
+  };
+
+  const handleBlockFromFeed = async (userId: string) => {
+    if (!session?.user.id) return;
+    try {
+      await blockUser(session.user.id, userId);
+      const newBlocked = [...blockedIds, userId];
+      setBlockedIds(newBlocked);
+      setPosts((prev) => prev.filter((p) => p.user?.id !== userId));
+    } catch (error) {
+      console.error('Block error:', error);
+      Alert.alert('Error', 'Failed to block user.');
+    }
+  };
+
+  const handleReportFromFeed = (postId: string) => {
+    setReportingPostId(postId);
+    setShowReportModal(true);
+  };
+
+  const handleReportSubmit = async (reason: string, details: string) => {
+    if (!session?.user.id || !reportingPostId) return;
+    await reportPost(session.user.id, reportingPostId, reason, details);
+    setShowReportModal(false);
+    setReportingPostId(null);
+    Alert.alert('Report Submitted', 'Thank you. We will review this report.');
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -276,6 +295,35 @@ export default function FeedScreen({ navigation }: Props) {
           <Text style={{ fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1 }} numberOfLines={1}>
             @{post.user?.username}
           </Text>
+          {post.user?.id !== session?.user.id && (
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert(undefined as any, undefined as any, [
+                  { text: 'Report Post', onPress: () => handleReportFromFeed(post.id) },
+                  {
+                    text: 'Block User',
+                    style: 'destructive',
+                    onPress: () => {
+                      if (post.user?.id) {
+                        Alert.alert(
+                          'Block User',
+                          `Block @${post.user.username}? You won't see each other's posts or be able to swap.`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Block', style: 'destructive', onPress: () => handleBlockFromFeed(post.user!.id) },
+                          ]
+                        );
+                      }
+                    },
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+              }}
+              style={{ padding: 4 }}
+            >
+              <Text style={{ fontSize: 14, color: '#9ca3af', fontWeight: '700' }}>•••</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Book Cover - Tappable */}
@@ -296,22 +344,12 @@ export default function FeedScreen({ navigation }: Props) {
             overflow: 'hidden',
           }}
         >
-          {post.post_type === 'swap' && post.image_url ? (
-            // Swap post with user photo - use regular Image
-            <Image
-              source={{ uri: post.image_url }}
-              style={{ width: CARD_WIDTH, height: COVER_HEIGHT }}
-              contentFit="cover"
-            />
-          ) : (
-            // Social post or swap without photo - use BookCover with zoom fallback
-            <BookCover
-              coverUrl={post.cover_image_url}
-              width={CARD_WIDTH}
-              height={COVER_HEIGHT}
-              style={{ borderRadius: 8 }}
-            />
-          )}
+          <BookCover
+            coverUrl={post.cover_image_url}
+            width={CARD_WIDTH}
+            height={COVER_HEIGHT}
+            style={{ borderRadius: 8 }}
+          />
         </TouchableOpacity>
 
         {/* Book Title - Dynamic font size */}
@@ -409,37 +447,27 @@ export default function FeedScreen({ navigation }: Props) {
           style={{ width: 100, height: 50 }}
           contentFit="contain"
         />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {/* Bell icon */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Notifications')}
-            style={{ position: 'relative', padding: 4 }}
-          >
-            {unreadNotifications > 0 ? (
-              <BellIconSolid size={26} color="#38B6FF" />
-            ) : (
-              <BellIcon size={26} color="#6b7280" />
-            )}
-            {unreadNotifications > 0 && (
-              <View style={{
-                position: 'absolute', top: 0, right: 0,
-                backgroundColor: '#ef4444', borderRadius: 8,
-                minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('CreatePost')}
-            className="bg-primary px-4 py-2.5 rounded-full"
-          >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>+ Post</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Notifications')}
+          style={{ position: 'relative', padding: 4 }}
+        >
+          {unreadNotifications > 0 ? (
+            <BellIconSolid size={26} color="#38B6FF" />
+          ) : (
+            <BellIcon size={26} color="#6b7280" />
+          )}
+          {unreadNotifications > 0 && (
+            <View style={{
+              position: 'absolute', top: 0, right: 0,
+              backgroundColor: '#ef4444', borderRadius: 8,
+              minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -511,6 +539,12 @@ export default function FeedScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
         />
       )}
+      <ReportModal
+        visible={showReportModal}
+        label="Post"
+        onSubmit={handleReportSubmit}
+        onCancel={() => { setShowReportModal(false); setReportingPostId(null); }}
+      />
     </SafeAreaView>
   );
 }

@@ -7,6 +7,7 @@ import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { Post } from '../../models/Post';
 import { canRequestSwap, createSwapRequest, hasPendingRequest } from '../../services/swapsService';
+import { isBlocked } from '../../services/blockService';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -53,6 +54,12 @@ export default function BookDetailScreen({ navigation }: Props) {
     }
 
     try {
+      const blocked = await isBlocked(session.user.id, post.user_id);
+      if (blocked) {
+        setCanSwap(false);
+        setCheckingSwap(false);
+        return;
+      }
       const eligible = await canRequestSwap(session.user.id, post.id);
       setCanSwap(eligible);
     } catch (error) {

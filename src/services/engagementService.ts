@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { Like, Comment } from '../models/Post';
+import { sendPushNotification } from './notificationsService';
 
 // ============================================
 // LIKES
@@ -14,6 +15,32 @@ export async function likePost(postId: string, userId: string): Promise<void> {
     });
 
   if (error) throw error;
+
+  // Notify the post owner
+  try {
+    const { data: post } = await supabase
+      .from('posts')
+      .select('user_id, title')
+      .eq('id', postId)
+      .single();
+
+    const { data: liker } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', userId)
+      .single();
+
+    if (post && post.user_id !== userId && liker) {
+      await sendPushNotification(
+        post.user_id,
+        `@${liker.username} liked your post`,
+        `"${post.title}"`,
+        { type: 'like', postId }
+      );
+    }
+  } catch (e) {
+    // Don't fail the like if notification fails
+  }
 }
 
 export async function unlikePost(postId: string, userId: string): Promise<void> {

@@ -41,11 +41,17 @@ export async function getFeedPosts(limit = 20, offset = 0): Promise<Post[]> {
   return data || [];
 }
 
-export async function getSocialPosts(limit = 20, offset = 0): Promise<Post[]> {
-  const { data, error } = await supabase
+export async function getSocialPosts(limit = 20, offset = 0, blockedUserIds: string[] = []): Promise<Post[]> {
+  let query = supabase
     .from('posts')
     .select('*, user:users(id, username, avatar_url)')
-    .eq('post_type', 'social')
+    .eq('post_type', 'social');
+
+  if (blockedUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${blockedUserIds.join(',')})`);
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -53,12 +59,18 @@ export async function getSocialPosts(limit = 20, offset = 0): Promise<Post[]> {
   return data || [];
 }
 
-export async function getSwapPosts(limit = 20, offset = 0): Promise<Post[]> {
-  const { data, error } = await supabase
+export async function getSwapPosts(limit = 20, offset = 0, blockedUserIds: string[] = []): Promise<Post[]> {
+  let query = supabase
     .from('posts')
     .select('*, user:users(id, username, avatar_url)')
     .eq('post_type', 'swap')
-    .eq('availability', 'available')
+    .eq('availability', 'available');
+
+  if (blockedUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${blockedUserIds.join(',')})`);
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
