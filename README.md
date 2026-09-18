@@ -90,13 +90,19 @@ npm install
 # supabase/migrations/003_remove_auto_profile.sql
 # supabase/migrations/004_users_insert_policy.sql
 # supabase/migrations/005_post_expansion.sql
-# supabase/migrations/005_swaps_schema.sql
-# supabase/migrations/006_follows_schema.sql
-# supabase/migrations/007_ratings_schema.sql
-# supabase/migrations/008_meetup_location.sql
-# supabase/migrations/009_total_swaps_trigger.sql
-# supabase/migrations/010_notifications_table.sql
-# supabase/migrations/011_blocks_reports.sql
+# supabase/migrations/006_swaps_schema.sql
+# supabase/migrations/007_follows_schema.sql
+# supabase/migrations/008_ratings_schema.sql
+# supabase/migrations/009_meetup_location.sql
+# supabase/migrations/010_total_swaps_trigger.sql
+# supabase/migrations/011_notifications_table.sql
+# supabase/migrations/012_blocks_reports.sql
+# supabase/migrations/013_p0_hardening.sql
+# supabase/migrations/014_block_enforcement.sql
+# supabase/migrations/015_nearby_feed.sql
+# supabase/migrations/016_account_deletion.sql
+# Optional seed for testing nearby feed (run manually, not a migration):
+# supabase/seed_nearby.sql
 
 # Start the app
 npm start

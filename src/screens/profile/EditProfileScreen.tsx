@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../config/supabase';
+import { Camera } from 'phosphor-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { uploadAvatar } from '../../services/storageService';
 import Avatar from '../../components/Avatar';
@@ -122,7 +123,7 @@ export default function EditProfileScreen({ navigation }: Props) {
                 <Avatar avatarUrl={null} username={profile.username} size={100} />
               )}
               <View className="absolute bottom-0 right-0 bg-primary w-8 h-8 rounded-full items-center justify-center">
-                <Text className="text-white text-sm">📷</Text>
+                <Camera size={16} color="#fff" weight="duotone" />
               </View>
             </TouchableOpacity>
 

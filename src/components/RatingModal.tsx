@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { submitRating } from '../services/ratingsService';
 import Avatar from './Avatar';
+import { Star } from 'phosphor-react-native';
 
 interface Props {
   visible: boolean;
   swapId: string;
   raterId: string;
-  ratedUser: { id: string; username: string; avatar_url: string | null };
+  ratedUser: { id: string; username: string; avatar_url?: string | null };
   onDone: () => void;
   onSkip: () => void;
 }
@@ -64,7 +65,7 @@ export default function RatingModal({ visible, swapId, raterId, ratedUser, onDon
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 12 }}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity key={star} onPress={() => setScore(star)}>
-                <Text style={{ fontSize: 40, color: star <= score ? '#f59e0b' : '#d1d5db' }}>★</Text>
+                <Star size={40} color={star <= score ? '#f59e0b' : '#d1d5db'} weight={star <= score ? 'fill' : 'regular'} />
               </TouchableOpacity>
             ))}
           </View>

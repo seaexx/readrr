@@ -30,15 +30,16 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import RatingModal from '../../components/RatingModal';
 import MeetupModal from '../../components/MeetupModal';
 import { sendPushNotification } from '../../services/notificationsService';
+import { Coffee, Books, Storefront, Martini, UsersThree, Buildings, MapPin, Confetti, ChatCircle, Check, PaperPlaneRight, Hourglass } from 'phosphor-react-native';
 
-const CATEGORY_META: Record<string, { label: string; emoji: string; bg: string; text: string }> = {
-  coffee_shop:      { label: 'Coffee Shop',    emoji: '☕', bg: '#fef3c7', text: '#92400e' },
-  library:          { label: 'Library',         emoji: '📚', bg: '#dbeafe', text: '#1e40af' },
-  bookshop:         { label: 'Bookshop',        emoji: '📖', bg: '#ede9fe', text: '#5b21b6' },
-  bar:              { label: 'Bar',             emoji: '🍺', bg: '#ffedd5', text: '#c2410c' },
-  book_club:        { label: 'Book Club',       emoji: '📗', bg: '#dcfce7', text: '#166534' },
-  community_space:  { label: 'Community Space', emoji: '🏛',  bg: '#ccfbf1', text: '#0f766e' },
-  other:            { label: 'Other',           emoji: '📍', bg: '#f3f4f6', text: '#4b5563' },
+const CATEGORY_META: Record<string, { label: string; icon: React.ComponentType<any>; bg: string; text: string }> = {
+  coffee_shop:      { label: 'Coffee Shop',    icon: Coffee,      bg: '#fef3c7', text: '#92400e' },
+  library:          { label: 'Library',         icon: Books,       bg: '#dbeafe', text: '#1e40af' },
+  bookshop:         { label: 'Bookshop',        icon: Storefront,  bg: '#ede9fe', text: '#5b21b6' },
+  bar:              { label: 'Bar',             icon: Martini,     bg: '#ffedd5', text: '#c2410c' },
+  book_club:        { label: 'Book Club',       icon: UsersThree,  bg: '#dcfce7', text: '#166534' },
+  community_space:  { label: 'Community Space', icon: Buildings,   bg: '#ccfbf1', text: '#0f766e' },
+  other:            { label: 'Other',           icon: MapPin,      bg: '#f3f4f6', text: '#4b5563' },
 };
 
 interface Props {
@@ -189,7 +190,10 @@ export default function ChatScreen({ navigation }: Props) {
         const recipient = amOwner ? swap.requester : swap.owner;
         const myUsername = amOwner ? swap.owner?.username : swap.requester?.username;
         if (recipient?.id) {
-          sendPushNotification(recipient.id, `@${myUsername}`, messageText).catch(() => {});
+          sendPushNotification(recipient.id, `@${myUsername}`, messageText, {
+            type: 'message',
+            swapId,
+          }).catch(() => {});
         }
       }
     } catch (error) {
@@ -346,7 +350,7 @@ export default function ChatScreen({ navigation }: Props) {
           <Text style={{ fontSize: 17, fontWeight: '600' }}>Swap Complete</Text>
         </View>
         <View className="flex-1 items-center justify-center px-8">
-          <Text style={{ fontSize: 64, marginBottom: 16 }}>🎉</Text>
+          <Confetti size={64} color="#38B6FF" weight="duotone" style={{ marginBottom: 16 }} />
           <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
             Swap Complete!
           </Text>
@@ -407,7 +411,10 @@ export default function ChatScreen({ navigation }: Props) {
             justifyContent: 'space-between',
           }}
         >
-          <Text style={{ fontSize: 14, color: '#6b7280' }}>📍 Meet somewhere safe?</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <MapPin size={14} color="#6b7280" weight="regular" />
+            <Text style={{ fontSize: 14, color: '#6b7280' }}>Meet somewhere safe?</Text>
+          </View>
           <TouchableOpacity
             onPress={() => { setIsCounterProposal(false); setShowMeetupModal(true); }}
           >
@@ -420,9 +427,10 @@ export default function ChatScreen({ navigation }: Props) {
     }
 
     // States B, C, D share a venue card base
+    const VenueIcon = categoryMeta?.icon ?? MapPin;
     const venueRow = (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-        <Text style={{ fontSize: 22 }}>{categoryMeta?.emoji ?? '📍'}</Text>
+        <VenueIcon size={22} color={categoryMeta?.text ?? '#4b5563'} weight="regular" />
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#1f2937' }}>
             {swap.meetup_venue_name}
@@ -552,9 +560,12 @@ export default function ChatScreen({ navigation }: Props) {
           borderColor: '#bbf7d0',
         }}
       >
-        <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '600', marginBottom: 8 }}>
-          ✓ Meetup confirmed
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+          <Check size={12} color="#15803d" weight="bold" />
+          <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '600' }}>
+            Meetup confirmed
+          </Text>
+        </View>
         {venueRow}
         <TouchableOpacity onPress={handleClearMeetup} disabled={meetupLoading}>
           <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Change plans?</Text>
@@ -585,14 +596,22 @@ export default function ChatScreen({ navigation }: Props) {
 
       {/* Completion Status Banner */}
       {(myConfirmation || theirConfirmation) && swap.status === 'accepted' && (
-        <View className="bg-yellow-50 px-4 py-2 border-b border-yellow-100">
-          <Text style={{ fontSize: 13, color: '#92400e', textAlign: 'center' }}>
-            {myConfirmation && !theirConfirmation
-              ? '✓ You confirmed. Waiting for other person...'
-              : !myConfirmation && theirConfirmation
-              ? '⏳ Other person confirmed. Your turn to confirm!'
-              : ''}
-          </Text>
+        <View className="bg-yellow-50 px-4 py-2 border-b border-yellow-100 flex-row items-center justify-center" style={{ gap: 6 }}>
+          {myConfirmation && !theirConfirmation ? (
+            <>
+              <Check size={13} color="#92400e" weight="bold" />
+              <Text style={{ fontSize: 13, color: '#92400e', textAlign: 'center' }}>
+                You confirmed. Waiting for other person...
+              </Text>
+            </>
+          ) : !myConfirmation && theirConfirmation ? (
+            <>
+              <Hourglass size={13} color="#92400e" weight="regular" />
+              <Text style={{ fontSize: 13, color: '#92400e', textAlign: 'center' }}>
+                Other person confirmed. Your turn to confirm!
+              </Text>
+            </>
+          ) : null}
         </View>
       )}
 
@@ -615,7 +634,7 @@ export default function ChatScreen({ navigation }: Props) {
           onLayout={() => flatListRef.current?.scrollToEnd()}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
-              <Text style={{ fontSize: 48, marginBottom: 16 }}>💬</Text>
+              <ChatCircle size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
               <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', paddingHorizontal: 40 }}>
                 Start chatting to arrange your book swap!
               </Text>
@@ -630,20 +649,23 @@ export default function ChatScreen({ navigation }: Props) {
             disabled={completing || (myConfirmation && !theirConfirmation)}
             className={`mx-4 py-3 rounded-xl ${myConfirmation ? 'bg-gray-200' : 'bg-green-500'}`}
           >
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: myConfirmation ? '#6b7280' : '#fff',
-                textAlign: 'center',
-              }}
-            >
-              {completing
-                ? 'Processing...'
-                : myConfirmation
-                ? "✓ You've Confirmed"
-                : '✓ Mark Swap as Complete'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              {!completing && <Check size={15} color={myConfirmation ? '#6b7280' : '#fff'} weight="bold" />}
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: '600',
+                  color: myConfirmation ? '#6b7280' : '#fff',
+                  textAlign: 'center',
+                }}
+              >
+                {completing
+                  ? 'Processing...'
+                  : myConfirmation
+                  ? "You've Confirmed"
+                  : 'Mark Swap as Complete'}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
 
@@ -682,9 +704,7 @@ export default function ChatScreen({ navigation }: Props) {
                 newMessage.trim() ? 'bg-blue-500' : 'bg-gray-200'
               }`}
             >
-              <Text style={{ fontSize: 18, color: newMessage.trim() ? '#fff' : '#9ca3af' }}>
-                ↑
-              </Text>
+              <PaperPlaneRight size={18} color={newMessage.trim() ? '#fff' : '#9ca3af'} weight="fill" />
             </TouchableOpacity>
           </View>
         )}

@@ -18,6 +18,7 @@ export interface Post {
   swap_type?: SwapType;
   availability?: Availability;
   location?: string; // WKT format: POINT(lng lat)
+  distance_miles?: number; // Populated by get_nearby_swap_posts RPC
   created_at: string;
   updated_at: string;
 

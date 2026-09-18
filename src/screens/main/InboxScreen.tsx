@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Alert, RefreshControl } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
+import { WarningCircle, Envelope } from 'phosphor-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { Swap } from '../../models/Swap';
 import { getReceivedSwaps, getSentSwaps, acceptSwap, declineSwap } from '../../services/swapsService';
@@ -24,6 +25,7 @@ export default function InboxScreen({ navigation }: Props) {
   const [receivedSwaps, setReceivedSwaps] = useState<Swap[]>([]);
   const [sentSwaps, setSentSwaps] = useState<Swap[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
@@ -81,8 +83,10 @@ export default function InboxScreen({ navigation }: Props) {
       const blockedSet = new Set(blockedIds);
       setReceivedSwaps(received.filter((s) => !blockedSet.has(s.requester_id)));
       setSentSwaps(sent.filter((s) => !blockedSet.has(s.owner_id)));
-    } catch (error) {
-      console.error('Error loading swaps:', error);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error loading swaps:', err);
+      setError(err?.message || 'Failed to load inbox. Pull to retry.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -306,6 +310,19 @@ export default function InboxScreen({ navigation }: Props) {
     return <LoadingSpinner fullScreen />;
   }
 
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center px-8">
+        <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load inbox</Text>
+        <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+        <TouchableOpacity onPress={() => { setError(null); loadSwaps(); }} className="bg-primary px-6 py-3 rounded-xl">
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
@@ -364,7 +381,7 @@ export default function InboxScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <Text style={{ fontSize: 48, marginBottom: 16 }}>📬</Text>
+            <Envelope size={48} color="#9ca3af" weight="duotone" />
             <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151' }}>
               {activeTab === 'received' ? 'No swap requests yet' : 'No requests sent'}
             </Text>

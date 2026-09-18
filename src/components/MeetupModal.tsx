@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
+import { Coffee, Books, Storefront, Martini, UsersThree, Buildings, MapPin, MagnifyingGlass, X, IconProps } from 'phosphor-react-native';
 import { proposeMeetup } from '../services/swapsService';
 import { VenueCategory } from '../models/Swap';
 
@@ -27,7 +28,7 @@ interface VenueResult {
 interface VenueChip {
   category: VenueCategory;
   label: string;
-  emoji: string;
+  icon: React.ComponentType<IconProps>;
   color: string;
 }
 
@@ -42,13 +43,13 @@ const OVERPASS_TAG: Partial<Record<VenueCategory, string>> = {
 };
 
 const VENUE_CHIPS: VenueChip[] = [
-  { category: 'coffee_shop',     label: 'Coffee Shop',     emoji: '☕', color: '#92400e' },
-  { category: 'library',         label: 'Library',          emoji: '📚', color: '#1e40af' },
-  { category: 'bookshop',        label: 'Bookshop',         emoji: '📖', color: '#5b21b6' },
-  { category: 'bar',             label: 'Bar',              emoji: '🍺', color: '#c2410c' },
-  { category: 'book_club',       label: 'Book Club',        emoji: '📗', color: '#166534' },
-  { category: 'community_space', label: 'Community Space',  emoji: '🏛',  color: '#0f766e' },
-  { category: 'other',           label: 'Other',            emoji: '📍', color: '#4b5563' },
+  { category: 'coffee_shop',     label: 'Coffee Shop',     icon: Coffee,      color: '#92400e' },
+  { category: 'library',         label: 'Library',          icon: Books,       color: '#1e40af' },
+  { category: 'bookshop',        label: 'Bookshop',         icon: Storefront,  color: '#5b21b6' },
+  { category: 'bar',             label: 'Bar',              icon: Martini,     color: '#c2410c' },
+  { category: 'book_club',       label: 'Book Club',        icon: UsersThree,  color: '#166534' },
+  { category: 'community_space', label: 'Community Space',  icon: Buildings,   color: '#0f766e' },
+  { category: 'other',           label: 'Other',            icon: MapPin,      color: '#4b5563' },
 ];
 
 interface Props {
@@ -282,9 +283,11 @@ export default function MeetupModal({
         gap: 10,
       }}
     >
-      <Text style={{ fontSize: 16 }}>
-        {item.source === 'overpass' ? '📍' : '🔍'}
-      </Text>
+      {item.source === 'overpass' ? (
+        <MapPin size={16} color="#6b7280" weight="regular" />
+      ) : (
+        <MagnifyingGlass size={16} color="#6b7280" weight="regular" />
+      )}
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 15, fontWeight: '500', color: '#1f2937' }}>
           {item.name}
@@ -357,6 +360,7 @@ export default function MeetupModal({
           >
             {VENUE_CHIPS.map((chip) => {
               const active = selectedCategory === chip.category;
+              const ChipIcon = chip.icon;
               return (
                 <TouchableOpacity
                   key={chip.category}
@@ -373,7 +377,7 @@ export default function MeetupModal({
                     gap: 6,
                   }}
                 >
-                  <Text style={{ fontSize: 15 }}>{chip.emoji}</Text>
+                  <ChipIcon size={16} color={active ? chip.color : '#374151'} weight="regular" />
                   <Text
                     style={{
                       fontSize: 14,
@@ -400,7 +404,7 @@ export default function MeetupModal({
                 paddingVertical: 10,
               }}
             >
-              <Text style={{ fontSize: 16, marginRight: 8 }}>🔍</Text>
+              <MagnifyingGlass size={16} color="#9ca3af" weight="regular" style={{ marginRight: 8 }} />
               <TextInput
                 value={searchQuery}
                 onChangeText={handleQueryChange}
@@ -412,7 +416,7 @@ export default function MeetupModal({
               {(searching) && <ActivityIndicator size="small" color="#9ca3af" />}
               {searchQuery.length > 0 && !searching && (
                 <TouchableOpacity onPress={() => handleQueryChange('')}>
-                  <Text style={{ fontSize: 15, color: '#9ca3af' }}>✕</Text>
+                  <X size={16} color="#9ca3af" weight="regular" />
                 </TouchableOpacity>
               )}
             </View>

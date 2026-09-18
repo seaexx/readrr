@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { supabase } from '../../config/supabase';
 import { getSocialPosts, getSwapPosts } from '../../services/postsService';
 import { likePost, unlikePost } from '../../services/engagementService';
@@ -23,8 +24,7 @@ import BookCover from '../../components/BookCover';
 import ReportModal from '../../components/ReportModal';
 import { blockUser, getBlockedUserIds } from '../../services/blockService';
 import { reportPost } from '../../services/reportService';
-import { HeartIcon, ChatBubbleLeftIcon, BellIcon } from 'react-native-heroicons/outline';
-import { HeartIcon as HeartIconSolid, BellIcon as BellIconSolid } from 'react-native-heroicons/solid';
+import { Heart, ChatCircle, Bell, MapPin, DotsThree, Books, ArrowsClockwise, WarningCircle } from 'phosphor-react-native';
 
 interface Props {
   navigation: any;
@@ -60,28 +60,63 @@ export default function FeedScreen({ navigation }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [blockedIds, setBlockedIds] = useState<string[]>([]);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationDenied, setLocationDenied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      if (session?.user.id) {
-        getBlockedUserIds(session.user.id).then((ids) => {
-          setBlockedIds(ids);
-          loadPostsWithBlocked(ids);
-        }).catch(() => loadPostsWithBlocked([]));
-        getUnreadCount(session.user.id).then(setUnreadNotifications).catch(() => {});
-      } else {
-        loadPostsWithBlocked([]);
-      }
+      const prepare = async () => {
+        let blocked: string[] = [];
+        if (session?.user.id) {
+          try {
+            blocked = await getBlockedUserIds(session.user.id);
+            setBlockedIds(blocked);
+          } catch {
+            blocked = [];
+          }
+          getUnreadCount(session.user.id).then(setUnreadNotifications).catch(() => {});
+        }
+
+        // Location for nearby Swaps tab
+        let locForFetch: { latitude: number; longitude: number } | null = null;
+        if (activeTab === 'swaps') {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+              const loc = await Location.getCurrentPositionAsync({});
+              locForFetch = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+              setUserLocation(locForFetch);
+              setLocationDenied(false);
+            } else {
+              setUserLocation(null);
+              setLocationDenied(true);
+            }
+          } catch {
+            setUserLocation(null);
+          }
+        }
+
+        loadPostsWithBlocked(blocked, locForFetch);
+      };
+
+      prepare();
     }, [activeTab, session?.user.id])
   );
 
-  const loadPostsWithBlocked = async (blocked: string[]) => {
+  const loadPostsWithBlocked = async (
+    blocked: string[],
+    loc: { latitude: number; longitude: number } | null = userLocation
+  ) => {
     setLoading(true);
+    setError(null);
     try {
       const data =
-        activeTab === 'feed' ? await getSocialPosts(20, 0, blocked) : await getSwapPosts(20, 0, blocked);
+        activeTab === 'feed'
+          ? await getSocialPosts(20, 0, blocked)
+          : await getSwapPosts(20, 0, blocked, loc);
 
       const postsWithCounts = await Promise.all(
         (data || []).map(async (post) => {
@@ -95,8 +130,9 @@ export default function FeedScreen({ navigation }: Props) {
       );
 
       setPosts(postsWithCounts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading posts:', error);
+      setError(error?.message || 'Failed to load posts. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -131,8 +167,9 @@ export default function FeedScreen({ navigation }: Props) {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      const loc = activeTab === 'swaps' ? userLocation : null;
       const data =
-        activeTab === 'feed' ? await getSocialPosts(20, 0, blockedIds) : await getSwapPosts(20, 0, blockedIds);
+        activeTab === 'feed' ? await getSocialPosts(20, 0, blockedIds) : await getSwapPosts(20, 0, blockedIds, loc);
 
       const postsWithCounts = await Promise.all(
         (data || []).map(async (post) => {
@@ -146,11 +183,17 @@ export default function FeedScreen({ navigation }: Props) {
       );
 
       setPosts(postsWithCounts);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error('Error refreshing:', error);
+      if (posts.length === 0) setError(error?.message || 'Failed to refresh. Check your connection and try again.');
     } finally {
       setRefreshing(false);
     }
+  };
+
+  const handleRetry = () => {
+    loadPostsWithBlocked(blockedIds, userLocation);
   };
 
   const loadMore = async () => {
@@ -161,7 +204,7 @@ export default function FeedScreen({ navigation }: Props) {
       const data =
         activeTab === 'feed'
           ? await getSocialPosts(20, posts.length, blockedIds)
-          : await getSwapPosts(20, posts.length, blockedIds);
+          : await getSwapPosts(20, posts.length, blockedIds, userLocation);
 
       const postsWithCounts = await Promise.all(
         (data || []).map(async (post) => {
@@ -321,7 +364,7 @@ export default function FeedScreen({ navigation }: Props) {
               }}
               style={{ padding: 4 }}
             >
-              <Text style={{ fontSize: 14, color: '#9ca3af', fontWeight: '700' }}>•••</Text>
+              <DotsThree size={18} color="#9ca3af" weight="bold" />
             </TouchableOpacity>
           )}
         </View>
@@ -376,11 +419,7 @@ export default function FeedScreen({ navigation }: Props) {
               className="flex-row items-center px-3 py-1"
               activeOpacity={0.7}
             >
-              {post.hasLiked ? (
-                <HeartIconSolid size={20} color="#E54B4B" style={{ marginRight: 4 }} />
-              ) : (
-                <HeartIcon size={20} color="#0072DD" style={{ marginRight: 4 }} />
-              )}
+              <Heart size={20} color={post.hasLiked ? '#E54B4B' : '#0072DD'} weight={post.hasLiked ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
               <Text style={{ fontSize: 14, color: '#374151', fontWeight: '500' }}>
                 {post.likeCount}
               </Text>
@@ -395,7 +434,7 @@ export default function FeedScreen({ navigation }: Props) {
               className="flex-row items-center px-3 py-1"
               activeOpacity={0.7}
             >
-              <ChatBubbleLeftIcon size={20} color="#0072DD" style={{ marginRight: 4 }} />
+              <ChatCircle size={20} color="#0072DD" weight="regular" style={{ marginRight: 4 }} />
               <Text style={{ fontSize: 14, color: '#374151', fontWeight: '500' }}>
                 {post.commentCount}
               </Text>
@@ -403,31 +442,54 @@ export default function FeedScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* Swap type badge for swap posts */}
-        {post.post_type === 'swap' && post.swap_type && (
-          <View className="items-center mt-1">
-            <View className="bg-blue-100 px-3 py-1.5 rounded-full">
-              <Text style={{ fontSize: 13, color: '#1d4ed8' }} className="capitalize">{post.swap_type}</Text>
-            </View>
+        {/* Swap type badge + distance for swap posts */}
+        {post.post_type === 'swap' && (
+          <View className="items-center mt-1 gap-1">
+            {post.swap_type && (
+              <View className="bg-blue-100 px-3 py-1.5 rounded-full">
+                <Text style={{ fontSize: 13, color: '#1d4ed8' }} className="capitalize">{post.swap_type}</Text>
+              </View>
+            )}
+            {post.distance_miles != null && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                <MapPin size={12} color="#6b7280" weight="regular" />
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>
+                  {post.distance_miles < 0.1 ? '<0.1' : post.distance_miles.toFixed(1)} mi away
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </View>
     );
   };
 
-  const renderEmpty = () => (
-    <View className="flex-1 items-center justify-center py-20">
-      <Text style={{ fontSize: 50, marginBottom: 16 }}>{activeTab === 'feed' ? '📚' : '🔄'}</Text>
-      <Text style={{ fontSize: 18, color: '#6b7280', marginBottom: 8 }}>
-        {activeTab === 'feed' ? 'No posts yet' : 'No swaps available'}
-      </Text>
-      <Text style={{ fontSize: 15, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 32 }}>
-        {activeTab === 'feed'
-          ? "Be the first to share what you're reading!"
-          : 'Post a book to start swapping!'}
-      </Text>
-    </View>
-  );
+  const renderEmpty = () => {
+    const isSwaps = activeTab === 'swaps';
+    const noNearby = isSwaps && userLocation && !locationDenied;
+
+    return (
+      <View className="flex-1 items-center justify-center py-20">
+        {isSwaps ? (
+        <ArrowsClockwise size={50} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
+      ) : (
+        <Books size={50} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
+      )}
+        <Text style={{ fontSize: 18, color: '#6b7280', marginBottom: 8 }}>
+          {isSwaps ? (noNearby ? 'No nearby swaps' : 'No swaps available') : 'No posts yet'}
+        </Text>
+        <Text style={{ fontSize: 15, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 32 }}>
+          {isSwaps
+            ? noNearby
+              ? 'No books within 25 miles. Try the seed accounts or post your own!'
+              : locationDenied
+              ? 'Location is off — showing all swaps. Enable location for nearby results.'
+              : 'Post a book to start swapping!'
+            : "Be the first to share what you're reading!"}
+        </Text>
+      </View>
+    );
+  };
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -452,9 +514,9 @@ export default function FeedScreen({ navigation }: Props) {
           style={{ position: 'relative', padding: 4 }}
         >
           {unreadNotifications > 0 ? (
-            <BellIconSolid size={26} color="#38B6FF" />
+            <Bell size={26} color="#38B6FF" weight="fill" />
           ) : (
-            <BellIcon size={26} color="#6b7280" />
+            <Bell size={26} color="#6b7280" weight="regular" />
           )}
           {unreadNotifications > 0 && (
             <View style={{
@@ -513,8 +575,32 @@ export default function FeedScreen({ navigation }: Props) {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#38B6FF" />
         </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151', textAlign: 'center', marginBottom: 8 }}>
+            Couldn't load {activeTab === 'feed' ? 'feed' : 'swaps'}
+          </Text>
+          <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={handleRetry} className="bg-primary px-6 py-3 rounded-xl">
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <FlatList
+        <>
+          {activeTab === 'swaps' && userLocation && !locationDenied && posts.length > 0 && (
+            <View className="px-4 py-2 bg-blue-50 flex-row items-center justify-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MapPin size={12} color="#1d4ed8" weight="regular" /><Text style={{ fontSize: 12, color: '#1d4ed8' }}>Showing nearby swaps within 25 miles</Text></View>
+            </View>
+          )}
+          {activeTab === 'swaps' && locationDenied && (
+            <View className="px-4 py-2 bg-amber-50 flex-row items-center justify-center">
+              <Text style={{ fontSize: 12, color: '#92400e', textAlign: 'center' }}>
+                Location off — showing all swaps. Enable location in Settings for nearby results.
+              </Text>
+            </View>
+          )}
+          <FlatList
           key={activeTab}
           data={posts}
           renderItem={renderBookCard}
@@ -538,6 +624,7 @@ export default function FeedScreen({ navigation }: Props) {
           ListFooterComponent={renderFooter}
           showsVerticalScrollIndicator={false}
         />
+        </>
       )}
       <ReportModal
         visible={showReportModal}

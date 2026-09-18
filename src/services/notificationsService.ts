@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { supabase } from '../config/supabase';
 
 export interface AppNotification {
@@ -44,13 +45,25 @@ export async function registerForPushNotifications(userId: string): Promise<void
       });
     }
 
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const token = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId:
+          (Constants?.expoConfig as any)?.extra?.eas?.projectId ??
+          (Constants as any)?.easConfig?.projectId ??
+          undefined,
+      })
+    ).data;
 
     await supabase
       .from('users')
       .update({ fcm_token: token })
       .eq('id', userId);
-  } catch (error) {
+  } catch (error: any) {
+    // Missing projectId before `eas init` is expected in Expo Go — not a crash
+    if (error?.message?.includes('projectId')) {
+      console.warn('Push notifications disabled: no projectId (run `eas init` to enable)');
+      return;
+    }
     console.error('Push notification registration error:', error);
   }
 }

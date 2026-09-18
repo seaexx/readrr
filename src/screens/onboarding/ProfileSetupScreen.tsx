@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { Camera, Check } from 'phosphor-react-native';
 import { sanitizeUsername, getUsernameError } from '../../utils/validation';
 import { compressImage } from '../../utils/imageCompression';
 
@@ -233,7 +234,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               />
             ) : (
               <View className="w-24 h-24 rounded-full bg-gray-200 items-center justify-center">
-                <Text className="text-4xl">📷</Text>
+                <Camera size={32} color="#fff" weight="duotone" />
               </View>
             )}
           </TouchableOpacity>
@@ -256,7 +257,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             />
             {checkingUsername && <ActivityIndicator size="small" />}
             {usernameAvailable && !checkingUsername && (
-              <Text className="text-success text-lg">✓</Text>
+              <Check size={18} color="#10b981" weight="bold" />
             )}
           </View>
 

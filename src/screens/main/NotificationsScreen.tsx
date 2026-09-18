@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
+import { Bell, Star, MapPin, CheckCircle, ArrowsClockwise, ChatCircle, ArrowLeft, WarningCircle } from 'phosphor-react-native';
 import {
   AppNotification,
   getNotifications,
@@ -33,11 +34,13 @@ function timeAgo(date: string): string {
 }
 
 function notificationIcon(title: string): string {
-  if (title.includes('accepted') || title.includes('🎉')) return '🎉';
-  if (title.includes('Meetup') || title.includes('📍')) return '📍';
-  if (title.includes('confirmed') || title.includes('✅')) return '✅';
-  if (title.includes('swap') || title.includes('🔄')) return '🔄';
-  return '💬';
+  // Kept for backwards compatibility with old notification rows that have emoji in title
+  // New notifications use plain text; this now checks keywords only
+  if (title.toLowerCase().includes('accepted')) return 'accepted';
+  if (title.toLowerCase().includes('meetup')) return 'meetup';
+  if (title.toLowerCase().includes('confirmed')) return 'confirmed';
+  if (title.toLowerCase().includes('swap')) return 'swap';
+  return 'message';
 }
 
 export default function NotificationsScreen({ navigation }: Props) {
@@ -45,6 +48,7 @@ export default function NotificationsScreen({ navigation }: Props) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,8 +61,10 @@ export default function NotificationsScreen({ navigation }: Props) {
     try {
       const data = await getNotifications(session.user.id);
       setNotifications(data);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error loading notifications:', err);
+      setError(err?.message || 'Failed to load notifications.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -79,11 +85,27 @@ export default function NotificationsScreen({ navigation }: Props) {
       );
     }
 
-    // Navigate based on data payload
-    const { screen, params } = notification.data || {};
-    if (screen) {
-      navigation.navigate(screen, params);
-    }
+    // Navigate based on data payload (supports both legacy screen/params and new type-based shape)
+    const data: any = notification.data || {};
+    try {
+      // Legacy: { screen, params }
+      if (data.screen) {
+        navigation.navigate(data.screen, data.params);
+        return;
+      }
+      const { type, swapId, postId } = data;
+      if (type === 'like' && postId) {
+        navigation.navigate('PostDetail', { postId });
+      } else if (type === 'swap_request' && swapId) {
+        navigation.navigate('Inbox', { tab: 'received' });
+      } else if (swapId && ['swap_accepted', 'message', 'meetup_proposed', 'meetup_confirmed'].includes(type)) {
+        navigation.navigate('Chat', { swapId });
+      } else if (swapId) {
+        navigation.navigate('Chat', { swapId });
+      } else if (postId) {
+        navigation.navigate('PostDetail', { postId });
+      }
+    } catch {}
   };
 
   const handleMarkAllRead = async () => {
@@ -119,7 +141,14 @@ export default function NotificationsScreen({ navigation }: Props) {
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 20 }}>{notificationIcon(item.title)}</Text>
+        {(() => {
+          const kind = notificationIcon(item.title);
+          if (kind === 'accepted') return <Star size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
+          if (kind === 'meetup') return <MapPin size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
+          if (kind === 'confirmed') return <CheckCircle size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
+          if (kind === 'swap') return <ArrowsClockwise size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
+          return <ChatCircle size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
+        })()}
       </View>
 
       {/* Content */}
@@ -172,7 +201,7 @@ export default function NotificationsScreen({ navigation }: Props) {
         }}
       >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><ArrowLeft size={16} color="#38B6FF" weight="regular" /><Text style={{ fontSize: 16, color: '#38B6FF' }}>Back</Text></View>
         </TouchableOpacity>
         <Text style={{ fontSize: 18, fontWeight: '700' }}>Notifications</Text>
         {unreadCount > 0 ? (
@@ -184,14 +213,24 @@ export default function NotificationsScreen({ navigation }: Props) {
         )}
       </View>
 
-      <FlatList
+      {error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingHorizontal: 32 }}>
+          <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
+          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load notifications</Text>
+          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={loadNotifications} style={{ backgroundColor: '#38B6FF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}>
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
         data={notifications}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
-            <Text style={{ fontSize: 48, marginBottom: 16 }}>🔔</Text>
+            <Bell size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
             <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151' }}>
               No notifications yet
             </Text>
@@ -201,6 +240,7 @@ export default function NotificationsScreen({ navigation }: Props) {
           </View>
         }
       />
+      )}
     </SafeAreaView>
   );
 }

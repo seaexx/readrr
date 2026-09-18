@@ -37,6 +37,22 @@ export async function createSwapRequest(
     .single();
 
   if (error) throw error;
+
+  // Notify the post owner
+  const [{ data: post }, { data: requester }] = await Promise.all([
+    supabase.from('posts').select('title').eq('id', postId).single(),
+    supabase.from('users').select('username').eq('id', requesterId).single(),
+  ]);
+
+  if (data && post && requester) {
+    sendPushNotification(
+      ownerId,
+      'New swap request!',
+      `@${requester.username} wants to swap for "${post.title}"`,
+      { type: 'swap_request', swapId: data.id, postId }
+    ).catch(() => {});
+  }
+
   return data;
 }
 
@@ -116,8 +132,9 @@ export async function acceptSwap(swapId: string): Promise<void> {
   if (swap) {
     sendPushNotification(
       swap.requester_id,
-      'Swap accepted! 🎉',
-      `@${(swap.owner as any)?.username} accepted your swap request`
+      'Swap accepted!',
+      `@${(swap.owner as any)?.username} accepted your swap request`,
+      { type: 'swap_accepted', swapId }
     ).catch(() => {});
   }
 }
@@ -243,8 +260,9 @@ export async function proposeMeetup(
     const toUserId = swap.requester_id === proposedById ? swap.owner_id : swap.requester_id;
     sendPushNotification(
       toUserId,
-      'Meetup suggested 📍',
-      `@${(swap.proposer as any)?.username} suggested ${venueName} as a meetup spot`
+      'Meetup suggested',
+      `@${(swap.proposer as any)?.username} suggested ${venueName} as a meetup spot`,
+      { type: 'meetup_proposed', swapId }
     ).catch(() => {});
   }
 }
@@ -271,8 +289,9 @@ export async function acceptMeetup(swapId: string): Promise<void> {
   if (swap?.meetup_proposed_by) {
     sendPushNotification(
       swap.meetup_proposed_by,
-      'Meetup confirmed ✅',
-      `Your suggested meetup at ${swap.meetup_venue_name} was accepted!`
+      'Meetup confirmed',
+      `Your suggested meetup at ${swap.meetup_venue_name} was accepted!`,
+      { type: 'meetup_confirmed', swapId }
     ).catch(() => {});
   }
 }

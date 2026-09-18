@@ -7,12 +7,14 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { Books, WarningCircle } from 'phosphor-react-native';
 import { getUserPosts, deletePost, updatePostAvailability } from '../../services/postsService';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
@@ -31,6 +33,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'swaps'>('posts');
+  const [error, setError] = useState<string | null>(null);
   useFocusEffect(
     useCallback(() => {
       if (profile) {
@@ -44,8 +47,10 @@ export default function ProfileScreen({ navigation }: Props) {
     try {
       const data = await getUserPosts(profile.id);
       setPosts(data);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error('Error loading posts:', error);
+      setError(error?.message || 'Failed to load posts. Pull to retry.');
     }
   };
 
@@ -98,6 +103,31 @@ export default function ProfileScreen({ navigation }: Props) {
             } catch (error) {
               console.error('Dev reset error:', error);
               Alert.alert('Error', 'Failed to reset. Check console.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'Permanently delete your account and all your posts, swaps, and messages? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase.rpc('delete_own_account');
+              if (error) throw error;
+              await supabase.auth.signOut();
+              reset();
+            } catch (error: any) {
+              console.error('Delete account error:', error);
+              Alert.alert('Error', error.message || 'Failed to delete account. Please try again or contact support.');
             }
           },
         },
@@ -170,7 +200,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const renderEmpty = () => (
     <View className="items-center py-12 px-6">
-      <Text className="text-5xl mb-4">📚</Text>
+      <Books size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
       <Text style={{ fontSize: 17, color: '#6b7280', marginBottom: 8 }}>
         {activeTab === 'posts' ? 'No posts yet' : 'No swaps yet'}
       </Text>
@@ -355,6 +385,28 @@ export default function ProfileScreen({ navigation }: Props) {
         </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        onPress={handleDeleteAccount}
+        className="mt-3 border border-gray-300 py-4 rounded-xl"
+      >
+        <Text className="text-gray-500 text-center font-semibold">Delete Account</Text>
+      </TouchableOpacity>
+
+      <View className="flex-row justify-center mt-6 gap-6">
+        <Text
+          style={{ fontSize: 13, color: '#38B6FF', fontWeight: '500' }}
+          onPress={() => Linking.openURL('https://readrr.app/terms')}
+        >
+          Terms of Service
+        </Text>
+        <Text
+          style={{ fontSize: 13, color: '#38B6FF', fontWeight: '500' }}
+          onPress={() => Linking.openURL('https://readrr.app/privacy')}
+        >
+          Privacy Policy
+        </Text>
+      </View>
+
       {/* DEV ONLY: Reset button for testing */}
       {__DEV__ && (
         <TouchableOpacity
@@ -386,7 +438,18 @@ export default function ProfileScreen({ navigation }: Props) {
         }
       >
         {renderHeader()}
-        {filteredPosts.length === 0 ? renderEmpty() : renderBooks()}
+        {error ? (
+          <View className="items-center py-12 px-6">
+            <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
+            <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>
+              Couldn't load posts
+            </Text>
+            <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 12 }}>{error}</Text>
+            <TouchableOpacity onPress={loadPosts} className="bg-primary px-6 py-3 rounded-xl">
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredPosts.length === 0 ? renderEmpty() : renderBooks()}
         {renderFooter()}
       </ScrollView>
     </SafeAreaView>

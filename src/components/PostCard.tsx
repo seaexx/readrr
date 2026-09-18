@@ -8,6 +8,7 @@ import { likePost, unlikePost } from '../services/engagementService';
 import { Post } from '../models/Post';
 import Avatar from './Avatar';
 import BookCover from './BookCover';
+import { Heart, ChatCircle, DotsThree } from 'phosphor-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -179,7 +180,7 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
         )}
         {!isOwnPost && (
           <TouchableOpacity onPress={handleMenuPress} style={{ paddingLeft: 8, paddingVertical: 4 }}>
-            <Text style={{ fontSize: 18, color: '#9ca3af', fontWeight: '700' }}>•••</Text>
+            <DotsThree size={18} color="#9ca3af" weight="bold" />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -243,12 +244,12 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
           disabled={loading}
           className="flex-row items-center mr-6"
         >
-          <Text className="text-2xl mr-2">{hasLiked ? '❤️' : '🤍'}</Text>
+          <Heart size={24} color={hasLiked ? '#E54B4B' : '#9ca3af'} weight={hasLiked ? 'fill' : 'regular'} style={{ marginRight: 6 }} />
           <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151' }}>{likeCount}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleComment} className="flex-row items-center">
-          <Text className="text-2xl mr-2">💬</Text>
+          <ChatCircle size={24} color="#6b7280" weight="regular" style={{ marginRight: 6 }} />
           <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151' }}>{commentCount}</Text>
         </TouchableOpacity>
       </View>

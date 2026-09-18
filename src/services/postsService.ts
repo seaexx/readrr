@@ -59,7 +59,53 @@ export async function getSocialPosts(limit = 20, offset = 0, blockedUserIds: str
   return data || [];
 }
 
-export async function getSwapPosts(limit = 20, offset = 0, blockedUserIds: string[] = []): Promise<Post[]> {
+export async function getSwapPosts(
+  limit = 20,
+  offset = 0,
+  blockedUserIds: string[] = [],
+  userLocation?: { latitude: number; longitude: number } | null,
+  radiusMiles = 25
+): Promise<Post[]> {
+  // Location-aware path: RPC that filters + sorts by distance
+  if (userLocation) {
+    const { data, error } = await supabase.rpc('get_nearby_swap_posts', {
+      user_lat: userLocation.latitude,
+      user_lon: userLocation.longitude,
+      radius_miles: radiusMiles,
+      result_limit: limit,
+      result_offset: offset,
+      blocked_ids: blockedUserIds.length > 0 ? blockedUserIds : [],
+    });
+
+    if (error) throw error;
+
+    return ((data as any[]) || []).map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      title: row.title,
+      author: row.author,
+      isbn: row.isbn,
+      cover_image_url: row.cover_image_url,
+      image_url: row.image_url,
+      cover_url: row.cover_url,
+      post_type: row.post_type,
+      condition: row.condition,
+      genre: row.genre,
+      swap_type: row.swap_type,
+      availability: row.availability,
+      location: undefined,
+      distance_miles: row.distance_miles,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      user: {
+        id: row.user_id,
+        username: row.username,
+        avatar_url: row.avatar_url,
+      },
+    })) as Post[];
+  }
+
+  // Fallback: no location available — show all available swaps newest-first
   let query = supabase
     .from('posts')
     .select('*, user:users(id, username, avatar_url)')

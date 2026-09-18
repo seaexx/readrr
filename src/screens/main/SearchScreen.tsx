@@ -9,7 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../config/supabase';
+import { useAuthStore } from '../../store/authStore';
+import { getBlockedUserIds } from '../../services/blockService';
 import { Post } from '../../models/Post';
+import { MagnifyingGlass, Tray, X, WarningCircle } from 'phosphor-react-native';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 
@@ -18,32 +21,46 @@ interface Props {
 }
 
 export default function SearchScreen({ navigation }: Props) {
+  const session = useAuthStore((state) => state.session);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const search = useCallback(async (text: string) => {
     if (!text.trim()) {
       setPosts([]);
+      setError(null);
       return;
     }
 
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      let dbQuery = supabase
         .from('posts')
         .select('*, user:users(id, username, avatar_url)')
-        .or(`title.ilike.%${text}%,author.ilike.%${text}%`)
+        .or(`title.ilike.%${text}%,author.ilike.%${text}%`);
+
+      if (session?.user.id) {
+        const blockedUserIds = await getBlockedUserIds(session.user.id);
+        if (blockedUserIds.length > 0) {
+          dbQuery = dbQuery.not('user_id', 'in', `(${blockedUserIds.join(',')})`);
+        }
+      }
+
+      const { data, error } = await dbQuery
         .order('created_at', { ascending: false })
         .limit(20);
       if (error) throw error;
       setPosts(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Search error:', error);
+      setError(error?.message || 'Search failed. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session?.user.id]);
 
   const handleQueryChange = (text: string) => {
     setQuery(text);
@@ -89,7 +106,7 @@ export default function SearchScreen({ navigation }: Props) {
       {/* Search bar */}
       <View className="px-4 pt-4 pb-2">
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2.5">
-          <Text style={{ fontSize: 16, color: '#9ca3af', marginRight: 8 }}>🔍</Text>
+          <MagnifyingGlass size={16} color="#9ca3af" weight="regular" style={{ marginRight: 8 }} />
           <TextInput
             value={query}
             onChangeText={handleQueryChange}
@@ -100,7 +117,7 @@ export default function SearchScreen({ navigation }: Props) {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => handleQueryChange('')}>
-              <Text style={{ fontSize: 16, color: '#9ca3af' }}>✕</Text>
+              <X size={16} color="#9ca3af" weight="regular" />
             </TouchableOpacity>
           )}
         </View>
@@ -111,16 +128,27 @@ export default function SearchScreen({ navigation }: Props) {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#38B6FF" />
         </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
+          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>
+            Search failed
+          </Text>
+          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={() => search(query)} className="bg-primary px-6 py-3 rounded-xl">
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       ) : !query.trim() ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Text style={{ fontSize: 40, marginBottom: 12 }}>🔍</Text>
+          <MagnifyingGlass size={40} color="#9ca3af" weight="duotone" style={{ marginBottom: 12 }} />
           <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>
             Search posts by book title or author
           </Text>
         </View>
       ) : isEmpty ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Text style={{ fontSize: 40, marginBottom: 12 }}>📭</Text>
+          <Tray size={40} color="#9ca3af" weight="duotone" style={{ marginBottom: 12 }} />
           <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>
             No results for "{query}"
           </Text>

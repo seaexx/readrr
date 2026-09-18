@@ -1,29 +1,21 @@
 import { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import * as Notifications from 'expo-notifications';
 import { supabase } from '../config/supabase';
 import { useAuthStore } from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { registerForPushNotifications } from '../services/notificationsService';
 
-// Heroicons - Outline (unfocused)
+// Phosphor Icons
 import {
-  HomeIcon,
-  PlusCircleIcon,
-  InboxIcon,
-  UserIcon,
-  MagnifyingGlassIcon,
-} from 'react-native-heroicons/outline';
-
-// Heroicons - Solid (focused)
-import {
-  HomeIcon as HomeIconSolid,
-  PlusCircleIcon as PlusCircleIconSolid,
-  InboxIcon as InboxIconSolid,
-  UserIcon as UserIconSolid,
-  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
-} from 'react-native-heroicons/solid';
+  House,
+  PlusCircle,
+  Tray,
+  User,
+  MagnifyingGlass,
+} from 'phosphor-react-native';
 
 // Auth Screens
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
@@ -67,6 +59,7 @@ export type MainTabsParamList = {
   Feed: undefined;
   Search: undefined;
   Swaps: undefined;
+  Post: undefined;
   Inbox: { tab?: 'received' | 'sent' } | undefined;
   Profile: undefined;
 };
@@ -197,12 +190,9 @@ function MainTabs() {
         component={FeedScreen}
         options={{
           tabBarLabel: 'Feed',
-          tabBarIcon: ({ focused, color, size }) =>
-            focused ? (
-              <HomeIconSolid color={color} size={size} />
-            ) : (
-              <HomeIcon color={color} size={size} />
-            ),
+          tabBarIcon: ({ focused, color, size }) => (
+            <House color={color} size={size} weight={focused ? 'fill' : 'regular'} />
+          ),
         }}
       />
       <Tab.Screen
@@ -210,12 +200,9 @@ function MainTabs() {
         component={SearchScreen}
         options={{
           tabBarLabel: 'Search',
-          tabBarIcon: ({ focused, color, size }) =>
-            focused ? (
-              <MagnifyingGlassIconSolid color={color} size={size} />
-            ) : (
-              <MagnifyingGlassIcon color={color} size={size} />
-            ),
+          tabBarIcon: ({ focused, color, size }) => (
+            <MagnifyingGlass color={color} size={size} weight={focused ? 'fill' : 'regular'} />
+          ),
         }}
       />
       <Tab.Screen
@@ -224,14 +211,14 @@ function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('CreatePost');
+            (navigation as any).navigate('CreatePost');
           },
         })}
         options={{
           tabBarLabel: 'Post',
           tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
           tabBarIcon: ({ color, size }) => (
-            <PlusCircleIcon color={color} size={size + 4} />
+            <PlusCircle color={color} size={size + 4} weight="regular" />
           ),
         }}
       />
@@ -242,12 +229,9 @@ function MainTabs() {
           tabBarLabel: 'Inbox',
           tabBarBadge: inboxBadge > 0 ? inboxBadge : undefined,
           tabBarBadgeStyle: { backgroundColor: '#ef4444', fontSize: 11 },
-          tabBarIcon: ({ focused, color, size }) =>
-            focused ? (
-              <InboxIconSolid color={color} size={size} />
-            ) : (
-              <InboxIcon color={color} size={size} />
-            ),
+          tabBarIcon: ({ focused, color, size }) => (
+            <Tray color={color} size={size} weight={focused ? 'fill' : 'regular'} />
+          ),
         }}
       />
       <Tab.Screen
@@ -255,12 +239,9 @@ function MainTabs() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused, color, size }) =>
-            focused ? (
-              <UserIconSolid color={color} size={size} />
-            ) : (
-              <UserIcon color={color} size={size} />
-            ),
+          tabBarIcon: ({ focused, color, size }) => (
+            <User color={color} size={size} weight={focused ? 'fill' : 'regular'} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -283,6 +264,48 @@ function MainNavigator() {
       <MainStack.Screen name="Notifications" component={NotificationsScreen} />
     </MainStack.Navigator>
   );
+}
+
+function NotificationHandler() {
+  const navigation = useNavigation<any>();
+
+  useEffect(() => {
+    const handleData = (data: any) => {
+      if (!data) return;
+      const { type, swapId, postId } = data;
+      // Small delay so the navigator is mounted
+      setTimeout(() => {
+        try {
+          if (type === 'like' && postId) {
+            navigation.navigate('PostDetail', { postId });
+          } else if (swapId && ['swap_accepted', 'message', 'meetup_proposed', 'meetup_confirmed'].includes(type)) {
+            navigation.navigate('Chat', { swapId });
+          } else if (type === 'swap_request' && swapId) {
+            // New request — show inbox received tab; chat not yet available
+            navigation.navigate('Inbox', { tab: 'received' });
+          } else if (swapId) {
+            navigation.navigate('Chat', { swapId });
+          } else if (postId) {
+            navigation.navigate('PostDetail', { postId });
+          }
+        } catch {}
+      }, 500);
+    };
+
+    // Cold start — app opened from a notification tap
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleData(response.notification.request.content.data);
+    });
+
+    // Foreground/background — notification tapped while app running
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleData(response.notification.request.content.data);
+    });
+
+    return () => sub.remove();
+  }, [navigation]);
+
+  return null;
 }
 
 export default function RootNavigator() {
@@ -373,6 +396,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
+      <NotificationHandler />
       {showAuth ? (
         <AuthNavigator />
       ) : showOnboarding ? (

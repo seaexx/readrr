@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import { supabase } from '../../config/supabase';
 import { isValidEmail, isValidPassword } from '../../utils/validation';
@@ -143,6 +144,18 @@ export default function SignUpScreen({ navigation }: Props) {
               {loading ? 'Creating Account...' : 'Continue'}
             </Text>
           </TouchableOpacity>
+
+          <Text style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', marginTop: 16, lineHeight: 18 }}>
+            By continuing, you agree to our{' '}
+            <Text style={{ color: '#38B6FF', fontWeight: '600' }} onPress={() => Linking.openURL('https://readrr.app/terms')}>
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text style={{ color: '#38B6FF', fontWeight: '600' }} onPress={() => Linking.openURL('https://readrr.app/privacy')}>
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

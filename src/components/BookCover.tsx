@@ -1,5 +1,6 @@
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { Image } from 'expo-image';
+import { Book } from 'phosphor-react-native';
 
 interface Props {
   coverUrl: string | null | undefined;
@@ -15,7 +16,7 @@ export default function BookCover({ coverUrl, width, height, style, contentFit =
       <View
         style={[{ width, height, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }, style]}
       >
-        <Text style={{ fontSize: Math.min(width, height) * 0.4 }}>📚</Text>
+        <Book size={Math.min(width, height) * 0.4} color="#9ca3af" weight="duotone" />
       </View>
     );
   }

@@ -29,8 +29,7 @@ import BookCover from '../../components/BookCover';
 import CommentItem from '../../components/CommentItem';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Post, Comment } from '../../models/Post';
-import { HeartIcon, ChatBubbleLeftIcon } from 'react-native-heroicons/outline';
-import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';
+import { Heart, ChatCircle } from 'phosphor-react-native';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const LEFT_WIDTH = SCREEN_WIDTH * 0.4;
@@ -358,18 +357,14 @@ export default function PostDetailScreen({ navigation }: Props) {
                   className="flex-row items-center mr-6"
                   activeOpacity={0.7}
                 >
-                  {hasLiked ? (
-                    <HeartIconSolid size={24} color="#E54B4B" style={{ marginRight: 4 }} />
-                  ) : (
-                    <HeartIcon size={24} color="#0072DD" style={{ marginRight: 4 }} />
-                  )}
+                  <Heart size={24} color={hasLiked ? '#E54B4B' : '#0072DD'} weight={hasLiked ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
                   <Text style={{ fontSize: 15, color: '#374151', fontWeight: '500' }}>
                     {likeCount}
                   </Text>
                 </TouchableOpacity>
 
                 <View className="flex-row items-center">
-                  <ChatBubbleLeftIcon size={24} color="#0072DD" style={{ marginRight: 4 }} />
+                  <ChatCircle size={24} color="#0072DD" weight="regular" style={{ marginRight: 4 }} />
                   <Text style={{ fontSize: 15, color: '#374151', fontWeight: '500' }}>
                     {comments.length}
                   </Text>

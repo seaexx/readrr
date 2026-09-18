@@ -19,6 +19,7 @@ import { fetchBookByISBN, BookInfo } from '../../services/booksService';
 import { createPost } from '../../services/postsService';
 import { uploadPostImage } from '../../services/storageService';
 import { useAuthStore } from '../../store/authStore';
+import { Camera, ArrowLeft } from 'phosphor-react-native';
 import { Condition, SwapType } from '../../models/Post';
 
 interface Props {
@@ -134,8 +135,15 @@ export default function SwapPostScreen({ navigation }: Props) {
         location = `POINT(${loc.coords.longitude} ${loc.coords.latitude})`;
       }
 
-      // Upload image
-      const imageUrl = await uploadPostImage(bookImage, session.user.id);
+      // Upload image with one automatic retry for transient failures
+      let imageUrl: string;
+      try {
+        imageUrl = await uploadPostImage(bookImage, session.user.id);
+      } catch (uploadError: any) {
+        // Wait a moment then retry once
+        await new Promise((r) => setTimeout(r, 1000));
+        imageUrl = await uploadPostImage(bookImage, session.user.id);
+      }
 
       // Create post
       await createPost({
@@ -155,7 +163,20 @@ export default function SwapPostScreen({ navigation }: Props) {
 
       navigation.navigate('MainTabs', { screen: 'Swaps' });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create post');
+      const msg = error.message || 'Failed to create post';
+      const isUploadError =
+        msg.toLowerCase().includes('upload') ||
+        msg.toLowerCase().includes('storage') ||
+        msg.toLowerCase().includes('network') ||
+        msg.toLowerCase().includes('fetch');
+      if (isUploadError) {
+        Alert.alert('Photo Upload Failed', 'Could not upload your book photo. Check your connection and try again.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', onPress: () => handlePost() },
+        ]);
+      } else {
+        Alert.alert('Error', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -176,7 +197,7 @@ export default function SwapPostScreen({ navigation }: Props) {
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 px-6">
           <TouchableOpacity onPress={() => setShowManualIsbn(false)} className="mt-4 mb-8">
-            <Text className="text-primary text-base">← Back</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><ArrowLeft size={16} color="#38B6FF" weight="regular" /><Text className="text-primary text-base">Back</Text></View>
           </TouchableOpacity>
 
           <Text className="text-2xl font-bold mb-2">Enter ISBN</Text>
@@ -225,7 +246,7 @@ export default function SwapPostScreen({ navigation }: Props) {
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <View className="px-6 pt-4 pb-10">
           <TouchableOpacity onPress={() => navigation.goBack()} className="mb-6">
-            <Text className="text-primary text-base">← Back</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><ArrowLeft size={16} color="#38B6FF" weight="regular" /><Text className="text-primary text-base">Back</Text></View>
           </TouchableOpacity>
 
           <Text className="text-2xl font-bold mb-6">Post Book for Swap</Text>
@@ -282,7 +303,7 @@ export default function SwapPostScreen({ navigation }: Props) {
               />
             ) : (
               <View className="w-full h-48 bg-gray-100 rounded-xl items-center justify-center">
-                <Text className="text-4xl mb-2">📷</Text>
+                <Camera size={40} color="#9ca3af" weight="duotone" style={{ marginBottom: 8 }} />
                 <Text className="text-gray-500">Add photo of your book</Text>
               </View>
             )}

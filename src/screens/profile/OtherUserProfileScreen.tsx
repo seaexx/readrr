@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
+import { DotsThree } from 'phosphor-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { getUserPosts } from '../../services/postsService';
 import { User } from '../../models/User';
@@ -19,6 +20,7 @@ import PostCard from '../../components/PostCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ReportModal from '../../components/ReportModal';
 import { blockUser, unblockUser, isBlocked } from '../../services/blockService';
+import { WarningCircle } from 'phosphor-react-native';
 import { reportUser } from '../../services/reportService';
 
 interface Props {
@@ -35,6 +37,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
 
   useFocusEffect(
@@ -45,21 +48,26 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
 
   const loadData = async () => {
     try {
-      const [userData, postsData] = await Promise.all([
-        supabase.from('users').select('*').eq('id', userId).single(),
-        getUserPosts(userId),
-      ]);
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      if (userData.error) throw userData.error;
-      setUser(userData.data);
-      setPosts(postsData);
+      if (userError) throw userError;
+      setUser(userData);
 
+      // Mutual blocks hide this user's posts
+      let blockStatus = false;
       if (session?.user.id) {
-        const blockStatus = await isBlocked(session.user.id, userId);
-        setBlocked(blockStatus);
+        blockStatus = await isBlocked(session.user.id, userId);
       }
-    } catch (error) {
-      console.error('Error loading profile:', error);
+      setBlocked(blockStatus);
+      setPosts(blockStatus ? [] : await getUserPosts(userId));
+      setError(null);
+    } catch (err: any) {
+      console.error('Error loading profile:', err);
+      setError(err?.message || 'Failed to load profile.');
     } finally {
       setLoading(false);
     }
@@ -124,6 +132,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     try {
       await unblockUser(session.user.id, userId);
       setBlocked(false);
+      await loadData();
     } catch (error) {
       console.error('Unblock error:', error);
       Alert.alert('Error', 'Failed to unblock user.');
@@ -138,6 +147,18 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   };
 
   if (loading || !user) {
+    if (error) {
+      return (
+        <SafeAreaView className="flex-1 bg-white items-center justify-center px-8">
+          <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load profile</Text>
+          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={loadData} className="bg-primary px-6 py-3 rounded-xl">
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      );
+    }
     return <LoadingSpinner fullScreen />;
   }
 
@@ -192,7 +213,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
           @{user.username}
         </Text>
         <TouchableOpacity onPress={handleMenuPress} style={{ width: 50, alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: 22, color: '#6b7280' }}>•••</Text>
+          <DotsThree size={22} color="#6b7280" weight="bold" />
         </TouchableOpacity>
       </View>
 
