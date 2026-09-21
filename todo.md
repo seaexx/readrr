@@ -53,9 +53,16 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       screens — a "social" app with no social graph in the UI.* (chip)
 
 ### P2 — retention (first real feature investment)
-- [ ] **Wishlist match alerts ⭐** — push when a want-to-read book is listed nearby. *The app's
-      missing "come back" hook; reuses shelf + nearby RPC + push, all already built. I can now
-      apply the needed migration directly via the CLI.* (chip)
+- [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
+      created, readers who have that book on their want-to-read shelf within 25 mi get a push +
+      in-app alert that deep-links to the book (`BookDetail`). Server matching in RPC
+      `get_wishlist_match_recipients` (migration 018); fan-out in `src/services/wishlistService.ts`;
+      wired into `postsService.createPost`. `users.location` is now persisted from the Feed Swaps
+      tab (`updateUserLocation`) so recipients are locatable.
+  - [ ] **Still needs real-device testing:** two accounts on real devices (push needs a device),
+        both with GPS within 25 mi; account A wishlists a book (Shelf → Want to Read), account B
+        posts that book as a swap → A should get the push + in-app alert. Recipients only match
+        once they've opened the Feed Swaps tab at least once (to store their location).
 
 ### P3 — polish (nice, not blocking)
 - [ ] **Dark mode** (readers read at night; `userInterfaceStyle` is light-only; color tokens

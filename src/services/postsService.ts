@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { Post, CreatePostInput } from '../models/Post';
+import { notifyWishlistMatches } from './wishlistService';
 
 export async function createPost(data: CreatePostInput): Promise<Post> {
   console.log('💾 postsService.createPost data:', JSON.stringify(data, null, 2));
@@ -16,6 +17,12 @@ export async function createPost(data: CreatePostInput): Promise<Post> {
   }
 
   console.log('✅ Post created:', JSON.stringify(post, null, 2));
+
+  // Fire-and-forget: alert nearby readers who have this book on their wishlist.
+  if (post?.post_type === 'swap' && data.location) {
+    void notifyWishlistMatches(post.id, post.title);
+  }
+
   return post;
 }
 
@@ -155,4 +162,21 @@ export async function updatePostAvailability(
     .eq('id', postId);
 
   if (error) throw error;
+}
+
+// Persist the user's current location so proximity features (nearby feed,
+// wishlist match alerts) can find them. WKT order is POINT(lon lat).
+export async function updateUserLocation(
+  userId: string,
+  latitude: number,
+  longitude: number
+): Promise<void> {
+  try {
+    await supabase
+      .from('users')
+      .update({ location: `POINT(${longitude} ${latitude})` })
+      .eq('id', userId);
+  } catch (e) {
+    console.error('updateUserLocation failed:', e);
+  }
 }

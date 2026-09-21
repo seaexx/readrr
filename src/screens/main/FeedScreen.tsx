@@ -14,7 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { supabase } from '../../config/supabase';
-import { getSocialPosts, getSwapPosts } from '../../services/postsService';
+import { getSocialPosts, getSwapPosts, updateUserLocation } from '../../services/postsService';
 import { likePost, unlikePost } from '../../services/engagementService';
 import { getUnreadCount } from '../../services/notificationsService';
 import { useAuthStore } from '../../store/authStore';
@@ -103,6 +103,7 @@ export default function FeedScreen({ navigation }: Props) {
               setUserLocation(locForFetch);
               setLocationDenied(false);
               setLocationPromptNeeded(false);
+              if (session?.user.id) updateUserLocation(session.user.id, locForFetch.latitude, locForFetch.longitude);
             } else if (status === 'denied') {
               setUserLocation(null);
               setLocationDenied(true);
@@ -224,6 +225,7 @@ export default function FeedScreen({ navigation }: Props) {
         setUserLocation(coords);
         setLocationDenied(false);
         setLocationPromptNeeded(false);
+        if (session?.user.id) updateUserLocation(session.user.id, coords.latitude, coords.longitude);
         loadPostsWithBlocked(blockedIds, coords);
       } else {
         setLocationDenied(true);

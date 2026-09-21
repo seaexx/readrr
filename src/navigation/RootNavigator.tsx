@@ -281,6 +281,8 @@ function NotificationHandler() {
         try {
           if (type === 'like' && postId) {
             navigation.navigate('PostDetail', { postId });
+          } else if (type === 'wishlist_match' && postId) {
+            navigation.navigate('BookDetail', { postId });
           } else if (swapId && ['swap_accepted', 'message', 'meetup_proposed', 'meetup_confirmed'].includes(type)) {
             navigation.navigate('Chat', { swapId });
           } else if (type === 'swap_request' && swapId) {

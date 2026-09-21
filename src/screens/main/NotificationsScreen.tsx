@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
-import { Bell, Star, MapPin, CheckCircle, ArrowsClockwise, ChatCircle, ArrowLeft, WarningCircle } from 'phosphor-react-native';
+import { Bell, Star, MapPin, CheckCircle, ArrowsClockwise, ChatCircle, ArrowLeft, WarningCircle, Bookmark } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import {
   AppNotification,
@@ -37,6 +37,7 @@ function timeAgo(date: string): string {
 function notificationIcon(title: string): string {
   // Kept for backwards compatibility with old notification rows that have emoji in title
   // New notifications use plain text; this now checks keywords only
+  if (title.toLowerCase().includes('wishlist')) return 'wishlist';
   if (title.toLowerCase().includes('accepted')) return 'accepted';
   if (title.toLowerCase().includes('meetup')) return 'meetup';
   if (title.toLowerCase().includes('confirmed')) return 'confirmed';
@@ -97,6 +98,8 @@ export default function NotificationsScreen({ navigation }: Props) {
       const { type, swapId, postId } = data;
       if (type === 'like' && postId) {
         navigation.navigate('PostDetail', { postId });
+      } else if (type === 'wishlist_match' && postId) {
+        navigation.navigate('BookDetail', { postId });
       } else if (type === 'swap_request' && swapId) {
         navigation.navigate('Inbox', { tab: 'received' });
       } else if (swapId && ['swap_accepted', 'message', 'meetup_proposed', 'meetup_confirmed'].includes(type)) {
@@ -144,6 +147,7 @@ export default function NotificationsScreen({ navigation }: Props) {
       >
         {(() => {
           const kind = notificationIcon(item.title);
+          if (kind === 'wishlist') return <Bookmark size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
           if (kind === 'accepted') return <Star size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
           if (kind === 'meetup') return <MapPin size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
           if (kind === 'confirmed') return <CheckCircle size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
