@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { fonts } from '../../theme/fonts';
 
 interface Props {
   navigation: any;
@@ -16,7 +17,7 @@ export default function WelcomeScreen({ navigation }: Props) {
           style={{ width: 300, height: 180, marginBottom: 8 }}
           contentFit="contain"
         />
-        <Text className="text-gray-500 text-center mb-12">
+        <Text className="text-gray-500 text-center mb-12" style={{ fontFamily: fonts.serifRegular, fontSize: 17 }}>
           Swap books with readers nearby
         </Text>
 
