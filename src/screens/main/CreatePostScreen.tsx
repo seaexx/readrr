@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
+import { fonts } from '../../theme/fonts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Props {
@@ -9,14 +10,14 @@ export default function CreatePostScreen({ navigation }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="px-6 pt-8">
-        <Text className="text-3xl font-bold mb-8">Create Post</Text>
+        <Text className="text-3xl mb-8" style={{ fontFamily: fonts.serifBold }}>Create Post</Text>
 
         {/* Social Post Option */}
         <TouchableOpacity
           onPress={() => navigation.navigate('SocialPost')}
           className="bg-blue-500 rounded-xl p-6 mb-4"
         >
-          <Text className="text-white text-xl font-bold mb-2">Social Post</Text>
+          <Text className="text-white text-xl mb-2" style={{ fontFamily: fonts.serifSemiBold }}>Social Post</Text>
           <Text className="text-white/90">Share what you're currently reading</Text>
         </TouchableOpacity>
 
@@ -25,7 +26,7 @@ export default function CreatePostScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('SwapPost')}
           className="bg-green-500 rounded-xl p-6"
         >
-          <Text className="text-white text-xl font-bold mb-2">Swap Post</Text>
+          <Text className="text-white text-xl mb-2" style={{ fontFamily: fonts.serifSemiBold }}>Swap Post</Text>
           <Text className="text-white/90">Post a book available to swap</Text>
         </TouchableOpacity>
 

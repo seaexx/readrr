@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fonts } from '../theme/fonts';
 import {
   View,
   Text,
@@ -60,7 +61,7 @@ export default function ReportModal({ visible, label, onSubmit, onCancel }: Prop
             <View style={{ width: 40, height: 4, backgroundColor: '#d1d5db', borderRadius: 2 }} />
           </View>
 
-          <Text style={{ fontSize: 20, fontWeight: '700', textAlign: 'center', marginTop: 12, marginBottom: 4 }}>
+          <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold, textAlign: 'center', marginTop: 12, marginBottom: 4 }}>
             Report {label}
           </Text>
           <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 20 }}>

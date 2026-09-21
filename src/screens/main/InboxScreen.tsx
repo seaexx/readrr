@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { WarningCircle, Envelope } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 import { useAuthStore } from '../../store/authStore';
 import { Swap } from '../../models/Swap';
 import { getReceivedSwaps, getSentSwaps, acceptSwap, declineSwap } from '../../services/swapsService';
@@ -327,7 +328,7 @@ export default function InboxScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="px-4 pt-2 pb-4 bg-white">
-        <Text style={{ fontSize: 28, fontWeight: '700' }}>Inbox</Text>
+        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Inbox</Text>
       </View>
 
       {/* Tabs */}

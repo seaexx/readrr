@@ -24,7 +24,9 @@ import BookCover from '../../components/BookCover';
 import ReportModal from '../../components/ReportModal';
 import { blockUser, getBlockedUserIds } from '../../services/blockService';
 import { reportPost } from '../../services/reportService';
-import { Heart, ChatCircle, Bell, MapPin, DotsThree, Books, ArrowsClockwise, WarningCircle } from 'phosphor-react-native';
+import { getWantToReadTitles, normalizeTitle } from '../../services/shelfService';
+import { Heart, ChatCircle, Bell, MapPin, DotsThree, Books, ArrowsClockwise, WarningCircle, Bookmark } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 
 interface Props {
   navigation: any;
@@ -53,6 +55,7 @@ interface PostWithEngagement extends Post {
 
 export default function FeedScreen({ navigation }: Props) {
   const session = useAuthStore((state) => state.session);
+  const hasPosted = useAuthStore((state) => state.hasPosted);
   const [activeTab, setActiveTab] = useState<TabType>('feed');
   const [posts, setPosts] = useState<PostWithEngagement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,8 +63,11 @@ export default function FeedScreen({ navigation }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [blockedIds, setBlockedIds] = useState<string[]>([]);
+  const [wishlistTitles, setWishlistTitles] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [locationPromptNeeded, setLocationPromptNeeded] = useState(false);
+  const [promptDismissed, setPromptDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
@@ -78,21 +84,34 @@ export default function FeedScreen({ navigation }: Props) {
             blocked = [];
           }
           getUnreadCount(session.user.id).then(setUnreadNotifications).catch(() => {});
+          // Slice 4: wishlist titles for "On your wishlist" badges on swap cards
+          getWantToReadTitles(session.user.id)
+            .then((titles) => setWishlistTitles(titles.map(normalizeTitle)))
+            .catch(() => setWishlistTitles([]));
         }
 
-        // Location for nearby Swaps tab
+        // Location for nearby Swaps tab — explain first, ask only on tap.
+        // getForegroundPermissionsAsync never prompts; the system dialog
+        // appears only after the user taps "Enable location".
         let locForFetch: { latitude: number; longitude: number } | null = null;
         if (activeTab === 'swaps') {
           try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            const { status } = await Location.getForegroundPermissionsAsync();
             if (status === 'granted') {
               const loc = await Location.getCurrentPositionAsync({});
               locForFetch = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
               setUserLocation(locForFetch);
               setLocationDenied(false);
-            } else {
+              setLocationPromptNeeded(false);
+            } else if (status === 'denied') {
               setUserLocation(null);
               setLocationDenied(true);
+              setLocationPromptNeeded(false);
+            } else {
+              // Undetermined — show the explainer, fetch unfiltered meanwhile
+              setUserLocation(null);
+              setLocationDenied(false);
+              setLocationPromptNeeded(true);
             }
           } catch {
             setUserLocation(null);
@@ -194,6 +213,26 @@ export default function FeedScreen({ navigation }: Props) {
 
   const handleRetry = () => {
     loadPostsWithBlocked(blockedIds, userLocation);
+  };
+
+  const handleEnableLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({});
+        const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+        setUserLocation(coords);
+        setLocationDenied(false);
+        setLocationPromptNeeded(false);
+        loadPostsWithBlocked(blockedIds, coords);
+      } else {
+        setLocationDenied(true);
+        setLocationPromptNeeded(false);
+      }
+    } catch {
+      setLocationDenied(true);
+      setLocationPromptNeeded(false);
+    }
   };
 
   const loadMore = async () => {
@@ -317,17 +356,7 @@ export default function FeedScreen({ navigation }: Props) {
     }
 
     return (
-      <View
-        style={{
-          width: CARD_WIDTH,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 6,
-          elevation: 3,
-        }}
-        className="mb-4"
-      >
+      <View style={{ width: CARD_WIDTH }} className="mb-5">
         {/* User Info on Top */}
         <View className="flex-row items-center mb-2">
           <Avatar
@@ -369,35 +398,59 @@ export default function FeedScreen({ navigation }: Props) {
           )}
         </View>
 
-        {/* Book Cover - Tappable */}
+        {/* Book Cover - Tappable, hero treatment.
+            Outer view casts a soft shadow (no clipping); inner view clips the
+            image; spine + edge highlight give a physical-book depth cue. */}
         <TouchableOpacity
           onPress={() => handleCardPress(post)}
-          activeOpacity={0.8}
-          style={{
-            width: CARD_WIDTH,
-            height: COVER_HEIGHT,
-            borderRadius: 8,
-            marginBottom: 8,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 4,
-            backgroundColor: '#f3f4f6',
-            overflow: 'hidden',
-          }}
+          activeOpacity={0.85}
+          style={{ marginBottom: 10 }}
         >
-          <BookCover
-            coverUrl={post.cover_image_url}
-            width={CARD_WIDTH}
-            height={COVER_HEIGHT}
-            style={{ borderRadius: 8 }}
-          />
+          <View
+            style={{
+              width: CARD_WIDTH,
+              height: COVER_HEIGHT,
+              borderRadius: 8,
+              backgroundColor: '#ffffff',
+              shadowColor: '#1e293b',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.18,
+              shadowRadius: 10,
+              elevation: 5,
+            }}
+          >
+            <View
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: 8,
+                overflow: 'hidden',
+                backgroundColor: '#f3f4f6',
+              }}
+            >
+              <BookCover
+                coverUrl={post.cover_image_url}
+                width={CARD_WIDTH}
+                height={COVER_HEIGHT}
+                style={{ borderRadius: 8 }}
+              />
+              {/* spine */}
+              <View
+                pointerEvents="none"
+                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: 'rgba(0,0,0,0.12)' }}
+              />
+              {/* highlight beside the spine */}
+              <View
+                pointerEvents="none"
+                style={{ position: 'absolute', left: 3, top: 0, bottom: 0, width: 1.5, backgroundColor: 'rgba(255,255,255,0.16)' }}
+              />
+            </View>
+          </View>
         </TouchableOpacity>
 
         {/* Book Title - Dynamic font size */}
         <Text
-          style={{ fontSize: getTitleFontSize(post.title), fontWeight: '600', marginBottom: 2, textAlign: 'center' }}
+          style={{ fontSize: getTitleFontSize(post.title) + 1, fontFamily: fonts.serifMedium, color: '#1a1a1a', lineHeight: getTitleFontSize(post.title) + 6, marginBottom: 2, textAlign: 'center' }}
           numberOfLines={2}
         >
           {post.title}
@@ -442,10 +495,15 @@ export default function FeedScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* Swap type badge + distance for swap posts */}
+        {/* Swap type badge + distance + wishlist for swap posts */}
         {post.post_type === 'swap' && (
           <View className="items-center mt-1 gap-1">
-            {post.swap_type && (
+            {wishlistTitles.includes(normalizeTitle(post.title)) && (
+              <View className="bg-green-100 px-3 py-1.5 rounded-full flex-row items-center" style={{ gap: 4 }}>
+                <Bookmark size={12} color="#15803d" weight="fill" />
+                <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '700' }}>On your wishlist</Text>
+              </View>
+            )}            {post.swap_type && (
               <View className="bg-blue-100 px-3 py-1.5 rounded-full">
                 <Text style={{ fontSize: 13, color: '#1d4ed8' }} className="capitalize">{post.swap_type}</Text>
               </View>
@@ -475,7 +533,7 @@ export default function FeedScreen({ navigation }: Props) {
       ) : (
         <Books size={50} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
       )}
-        <Text style={{ fontSize: 18, color: '#6b7280', marginBottom: 8 }}>
+        <Text style={{ fontSize: 20, fontFamily: fonts.serifMedium, color: '#4b5563', marginBottom: 8 }}>
           {isSwaps ? (noNearby ? 'No nearby swaps' : 'No swaps available') : 'No posts yet'}
         </Text>
         <Text style={{ fontSize: 15, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 32 }}>
@@ -542,8 +600,8 @@ export default function FeedScreen({ navigation }: Props) {
         >
           <Text
             style={{
-              fontSize: 16,
-              fontWeight: '600',
+              fontSize: 17,
+              fontFamily: fonts.serifSemiBold,
               textAlign: 'center',
               color: activeTab === 'feed' ? '#38B6FF' : '#6b7280',
             }}
@@ -559,8 +617,8 @@ export default function FeedScreen({ navigation }: Props) {
         >
           <Text
             style={{
-              fontSize: 16,
-              fontWeight: '600',
+              fontSize: 17,
+              fontFamily: fonts.serifSemiBold,
               textAlign: 'center',
               color: activeTab === 'swaps' ? '#38B6FF' : '#6b7280',
             }}
@@ -578,7 +636,7 @@ export default function FeedScreen({ navigation }: Props) {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-8">
           <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151', textAlign: 'center', marginBottom: 8 }}>
+          <Text style={{ fontSize: 19, fontFamily: fonts.serifSemiBold, color: '#374151', textAlign: 'center', marginBottom: 8 }}>
             Couldn't load {activeTab === 'feed' ? 'feed' : 'swaps'}
           </Text>
           <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
@@ -588,6 +646,51 @@ export default function FeedScreen({ navigation }: Props) {
         </View>
       ) : (
         <>
+          {activeTab === 'feed' && hasPosted === false && !promptDismissed && (
+            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af', marginBottom: 4 }}>
+                Share what you're reading
+              </Text>
+              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
+                Add your first book so other readers can find you. Browse as long as you like first.
+              </Text>
+              <View className="flex-row items-center" style={{ gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('FirstPost')}
+                  className="bg-primary px-5 py-2.5 rounded-xl"
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>Add your first book</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setPromptDismissed(true)} className="px-4 py-2.5">
+                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Later</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {activeTab === 'swaps' && locationPromptNeeded && (
+            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <MapPin size={16} color="#1d4ed8" weight="regular" />
+                <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af' }}>
+                  See books near you
+                </Text>
+              </View>
+              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
+                Readrr uses your location to show swaps within 25 miles. Your exact location is never shared with other readers.
+              </Text>
+              <View className="flex-row items-center" style={{ gap: 8 }}>
+                <TouchableOpacity
+                  onPress={handleEnableLocation}
+                  className="bg-primary px-5 py-2.5 rounded-xl"
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>Enable location</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setLocationPromptNeeded(false); setLocationDenied(true); }} className="px-4 py-2.5">
+                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Not now</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           {activeTab === 'swaps' && userLocation && !locationDenied && posts.length > 0 && (
             <View className="px-4 py-2 bg-blue-50 flex-row items-center justify-center">
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MapPin size={12} color="#1d4ed8" weight="regular" /><Text style={{ fontSize: 12, color: '#1d4ed8' }}>Showing nearby swaps within 25 miles</Text></View>

@@ -13,6 +13,7 @@ import { useAuthStore } from '../../store/authStore';
 import { getBlockedUserIds } from '../../services/blockService';
 import { Post } from '../../models/Post';
 import { MagnifyingGlass, Tray, X, WarningCircle } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 
@@ -78,7 +79,7 @@ export default function SearchScreen({ navigation }: Props) {
     >
       <BookCover coverUrl={item.cover_image_url} width={44} height={64} style={{ borderRadius: 4 }} />
       <View className="ml-3 flex-1">
-        <Text style={{ fontSize: 15, fontWeight: '600' }} numberOfLines={2}>{item.title}</Text>
+        <Text style={{ fontSize: 16, fontFamily: fonts.serifMedium, color: '#1a1a1a' }} numberOfLines={2}>{item.title}</Text>
         {item.author && (
           <Text style={{ fontSize: 13, color: '#6b7280' }}>{item.author}</Text>
         )}

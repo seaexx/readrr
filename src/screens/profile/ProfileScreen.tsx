@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { Books, WarningCircle } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 import { getUserPosts, deletePost, updatePostAvailability } from '../../services/postsService';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
@@ -148,7 +149,7 @@ export default function ProfileScreen({ navigation }: Props) {
       {/* Profile Header */}
       <View className="items-center pt-6 pb-4">
         <Avatar avatarUrl={profile.avatar_url} username={profile.username} size={100} />
-        <Text style={{ fontSize: 24, fontWeight: '700', marginTop: 16 }}>@{profile.username}</Text>
+        <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 16 }}>@{profile.username}</Text>
         <Text style={{ fontSize: 15, color: '#6b7280', marginTop: 4 }}>{profile.email}</Text>
         {profile.city && <Text style={{ fontSize: 15, color: '#6b7280' }}>{profile.city}</Text>}
         {profile.bio && (
@@ -157,13 +158,21 @@ export default function ProfileScreen({ navigation }: Props) {
           </Text>
         )}
 
-        {/* Edit Button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('EditProfile')}
-          className="mt-4 border border-gray-300 px-6 py-2.5 rounded-full"
-        >
-          <Text style={{ fontSize: 15, fontWeight: '500', color: '#374151' }}>Edit Profile</Text>
-        </TouchableOpacity>
+        {/* Edit + Shelf Buttons */}
+        <View className="flex-row justify-center mt-4" style={{ gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('EditProfile')}
+            className="border border-gray-300 px-6 py-2.5 rounded-full"
+          >
+            <Text style={{ fontSize: 15, fontWeight: '500', color: '#374151' }}>Edit Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Shelf')}
+            className="border border-gray-300 px-6 py-2.5 rounded-full"
+          >
+            <Text style={{ fontSize: 15, fontWeight: '500', color: '#374151' }}>My Shelf</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Stats */}

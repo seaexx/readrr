@@ -29,7 +29,9 @@ import BookCover from '../../components/BookCover';
 import CommentItem from '../../components/CommentItem';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Post, Comment } from '../../models/Post';
-import { Heart, ChatCircle } from 'phosphor-react-native';
+import { Heart, ChatCircle, Bookmark } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
+import { promptSaveToShelf } from '../../utils/shelfPrompt';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const LEFT_WIDTH = SCREEN_WIDTH * 0.4;
@@ -241,7 +243,7 @@ export default function PostDetailScreen({ navigation }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
           </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '600' }}>Post</Text>
+          <Text style={{ flex: 1, textAlign: 'center', fontSize: 19, fontFamily: fonts.serifSemiBold }}>Post</Text>
           <View style={{ width: 50 }} />
         </View>
 
@@ -279,7 +281,7 @@ export default function PostDetailScreen({ navigation }: Props) {
               showsVerticalScrollIndicator={false}
             >
               {/* Book Title */}
-              <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 4 }}>{post.title}</Text>
+              <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 4 }}>{post.title}</Text>
 
               {/* Author */}
               {post.author && (
@@ -369,13 +371,31 @@ export default function PostDetailScreen({ navigation }: Props) {
                     {comments.length}
                   </Text>
                 </View>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    session?.user.id &&
+                    promptSaveToShelf(session.user.id, {
+                      isbn: post.isbn,
+                      title: post.title,
+                      author: post.author,
+                      cover_image_url: post.cover_image_url,
+                    })
+                  }
+                  className="flex-row items-center"
+                  style={{ marginLeft: 'auto' }}
+                  activeOpacity={0.7}
+                >
+                  <Bookmark size={24} color="#6b7280" weight="regular" style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 15, color: '#374151', fontWeight: '500' }}>Save</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Divider */}
               <View className="h-px bg-gray-200 mb-3" />
 
               {/* Comments Section */}
-              <Text style={{ fontSize: 17, fontWeight: '700', marginBottom: 12 }}>
+              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, marginBottom: 12 }}>
                 Comments ({comments.length})
               </Text>
 

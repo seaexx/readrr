@@ -9,6 +9,7 @@ import { Post } from '../models/Post';
 import Avatar from './Avatar';
 import BookCover from './BookCover';
 import { Heart, ChatCircle, DotsThree } from 'phosphor-react-native';
+import { fonts } from '../theme/fonts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -206,7 +207,7 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
 
         {/* Book Info - below image like Instagram */}
         <View className="px-4 pt-3 pb-2">
-          <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 2 }}>{post.title}</Text>
+          <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 2 }}>{post.title}</Text>
           {post.author && <Text style={{ fontSize: 15, color: '#4b5563' }}>{post.author}</Text>}
           {post.caption && (
             <Text style={{ fontSize: 15, color: '#1f2937', marginTop: 6 }}>{post.caption}</Text>

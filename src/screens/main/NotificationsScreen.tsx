@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { Bell, Star, MapPin, CheckCircle, ArrowsClockwise, ChatCircle, ArrowLeft, WarningCircle } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 import {
   AppNotification,
   getNotifications,
@@ -203,7 +204,7 @@ export default function NotificationsScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><ArrowLeft size={16} color="#38B6FF" weight="regular" /><Text style={{ fontSize: 16, color: '#38B6FF' }}>Back</Text></View>
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700' }}>Notifications</Text>
+        <Text style={{ fontSize: 20, fontFamily: fonts.serifSemiBold }}>Notifications</Text>
         {unreadCount > 0 ? (
           <TouchableOpacity onPress={handleMarkAllRead}>
             <Text style={{ fontSize: 14, color: '#38B6FF' }}>Mark all read</Text>

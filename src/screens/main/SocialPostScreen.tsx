@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fonts } from '../../theme/fonts';
 import {
   View,
   Text,
@@ -9,13 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import BarcodeScanner from '../../components/BarcodeScanner';
 import BookCover from '../../components/BookCover';
-import { fetchBookByISBN, BookInfo } from '../../services/booksService';
+import BookFinder from '../../components/BookFinder';
+import { BookInfo } from '../../services/booksService';
 import { createPost } from '../../services/postsService';
 import { useAuthStore } from '../../store/authStore';
 
@@ -25,45 +25,12 @@ interface Props {
 
 export default function SocialPostScreen({ navigation }: Props) {
   const session = useAuthStore((state) => state.session);
+  const setHasPosted = useAuthStore((state) => state.setHasPosted);
 
-  const [showScanner, setShowScanner] = useState(false);
-  const [showManualIsbn, setShowManualIsbn] = useState(false);
-  const [manualIsbn, setManualIsbn] = useState('');
-  const [lookingUp, setLookingUp] = useState(false);
+  const [findingBook, setFindingBook] = useState(false);
   const [book, setBook] = useState<BookInfo | null>(null);
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleBarcodeScanned = async (isbn: string) => {
-    setShowScanner(false);
-
-    try {
-      const bookData = await fetchBookByISBN(isbn);
-      setBook(bookData);
-    } catch (error) {
-      Alert.alert('Book Not Found', 'Could not find book with that ISBN');
-    }
-  };
-
-  const handleManualIsbnSubmit = async () => {
-    const isbn = manualIsbn.trim().replace(/-/g, '');
-    if (!isbn) {
-      Alert.alert('Error', 'Please enter an ISBN');
-      return;
-    }
-
-    setLookingUp(true);
-    try {
-      const bookData = await fetchBookByISBN(isbn);
-      setBook(bookData);
-      setShowManualIsbn(false);
-      setManualIsbn('');
-    } catch (error) {
-      Alert.alert('Book Not Found', 'Could not find book with that ISBN');
-    } finally {
-      setLookingUp(false);
-    }
-  };
 
   const handlePost = async () => {
     if (!book || !session) {
@@ -87,6 +54,7 @@ export default function SocialPostScreen({ navigation }: Props) {
       });
 
       navigation.navigate('MainTabs', { screen: 'Feed' });
+      setHasPosted(true);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create post');
     } finally {
@@ -94,60 +62,16 @@ export default function SocialPostScreen({ navigation }: Props) {
     }
   };
 
-  if (showScanner) {
+  if (findingBook) {
     return (
-      <BarcodeScanner
-        onBarcodeScanned={handleBarcodeScanned}
-        onCancel={() => setShowScanner(false)}
-        title="Scan Book Barcode"
+      <BookFinder
+        onSelect={(b) => {
+          setBook(b);
+          setFindingBook(false);
+        }}
+        onCancel={() => setFindingBook(false)}
+        title="Choose a Book"
       />
-    );
-  }
-
-  if (showManualIsbn) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-1 px-6">
-          <TouchableOpacity onPress={() => setShowManualIsbn(false)} className="mt-4 mb-8">
-            <Text className="text-primary text-base">← Back</Text>
-          </TouchableOpacity>
-
-          <Text className="text-2xl font-bold mb-2">Enter ISBN</Text>
-          <Text className="text-gray-500 mb-8">
-            Find the ISBN on the back of the book near the barcode
-          </Text>
-
-          <TextInput
-            value={manualIsbn}
-            onChangeText={setManualIsbn}
-            placeholder="e.g. 978-0-13-468599-1"
-            keyboardType="numeric"
-            style={styles.isbnInput}
-            autoCapitalize="none"
-            editable={!lookingUp}
-          />
-
-          <TouchableOpacity
-            onPress={handleManualIsbnSubmit}
-            disabled={!manualIsbn.trim() || lookingUp}
-            className={`py-4 rounded-xl ${
-              manualIsbn.trim() && !lookingUp ? 'bg-primary' : 'bg-gray-300'
-            }`}
-          >
-            {lookingUp ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white text-center font-semibold text-lg">
-                Look Up Book
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-            <Text className="text-gray-500 text-center">Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
     );
   }
 
@@ -163,7 +87,7 @@ export default function SocialPostScreen({ navigation }: Props) {
               <Text className="text-primary text-base">← Back</Text>
             </TouchableOpacity>
 
-            <Text className="text-2xl font-bold mb-6">Share What You're Reading</Text>
+            <Text className="text-2xl mb-6" style={{ fontFamily: fonts.serifBold }}>Share What You're Reading</Text>
 
             {/* Book Selection */}
             {book ? (
@@ -185,20 +109,11 @@ export default function SocialPostScreen({ navigation }: Props) {
             ) : (
               <View className="mb-6">
                 <TouchableOpacity
-                  onPress={() => setShowScanner(true)}
-                  className="bg-primary py-4 rounded-xl mb-3"
+                  onPress={() => setFindingBook(true)}
+                  className="bg-primary py-4 rounded-xl"
                 >
                   <Text className="text-white text-center font-semibold">
-                    Scan Barcode
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setShowManualIsbn(true)}
-                  className="border border-primary py-4 rounded-xl"
-                >
-                  <Text className="text-primary text-center font-semibold">
-                    Enter ISBN Manually
+                    Find a Book
                   </Text>
                 </TouchableOpacity>
               </View>

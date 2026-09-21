@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { Camera, Check } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 import { sanitizeUsername, getUsernameError } from '../../utils/validation';
 import { compressImage } from '../../utils/imageCompression';
 
@@ -203,8 +204,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         setProfile(data);
       }
 
-      // Navigate to first post
-      navigation.navigate('FirstPost');
+      // Profile saved — RootNavigator switches to the main app automatically.
+      // The first post is optional now (prompted in Feed, not blocking).
     } catch (error: any) {
       console.error('Profile setup error:', error);
       Alert.alert('Error', error.message || 'Failed to save profile');
@@ -220,7 +221,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     >
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <View className="px-6 pt-16">
-          <Text className="text-3xl font-bold mb-2 text-center">Create Profile</Text>
+          <Text className="text-3xl mb-2 text-center" style={{ fontFamily: fonts.serifBold }}>Create Profile</Text>
           <Text className="text-gray-500 mb-8 text-center">
             {profile ? 'Update your profile' : 'Set up your profile to continue'}
           </Text>

@@ -25,7 +25,6 @@ import SignInScreen from '../screens/auth/SignInScreen';
 // Onboarding Screens
 import ProfileSetupScreen from '../screens/onboarding/ProfileSetupScreen';
 import FirstPostScreen from '../screens/onboarding/FirstPostScreen';
-
 // Main Screens
 import FeedScreen from '../screens/main/FeedScreen';
 import SearchScreen from '../screens/main/SearchScreen';
@@ -37,6 +36,7 @@ import PostDetailScreen from '../screens/main/PostDetailScreen';
 import InboxScreen from '../screens/main/InboxScreen';
 import ChatScreen from '../screens/main/ChatScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import ShelfScreen from '../screens/main/ShelfScreen';
 
 // Profile Screens
 import ProfileScreen from '../screens/profile/ProfileScreen';
@@ -76,6 +76,8 @@ export type MainStackParamList = {
   Inbox: { tab?: 'received' | 'sent' };
   Chat: { swapId: string };
   Notifications: undefined;
+  FirstPost: undefined;
+  Shelf: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -93,14 +95,13 @@ function AuthNavigator() {
   );
 }
 
-function OnboardingNavigator({ hasProfile }: { hasProfile: boolean }) {
+function OnboardingNavigator() {
   return (
     <OnboardingStack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={hasProfile ? 'FirstPost' : 'ProfileSetup'}
+      initialRouteName="ProfileSetup"
     >
       <OnboardingStack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-      <OnboardingStack.Screen name="FirstPost" component={FirstPostScreen} />
     </OnboardingStack.Navigator>
   );
 }
@@ -262,6 +263,8 @@ function MainNavigator() {
       <MainStack.Screen name="Inbox" component={InboxScreen} />
       <MainStack.Screen name="Chat" component={ChatScreen} />
       <MainStack.Screen name="Notifications" component={NotificationsScreen} />
+      <MainStack.Screen name="FirstPost" component={FirstPostScreen} />
+      <MainStack.Screen name="Shelf" component={ShelfScreen} />
     </MainStack.Navigator>
   );
 }
@@ -309,7 +312,7 @@ function NotificationHandler() {
 }
 
 export default function RootNavigator() {
-  const { session, profile, loading, hasPosted, setSession, setLoading, setProfile, setHasPosted } = useAuthStore();
+  const { session, profile, loading, setSession, setLoading, setProfile, setHasPosted } = useAuthStore();
 
   // Listen for auth changes
   useEffect(() => {
@@ -385,14 +388,17 @@ export default function RootNavigator() {
   };
 
   // Show loading while checking auth state
-  if (loading || (session && hasPosted === null)) {
+  if (loading) {
     return <LoadingSpinner fullScreen />;
   }
 
-  // Determine which navigator to show
+  // Determine which navigator to show.
+  // Browse-first: profile setup is required, but the first post is
+  // optional — users can explore Feed/Swaps/Search before posting.
+  // hasPosted only drives the "add your first book" prompt in Feed.
   const showAuth = !session;
-  const showOnboarding = session && (!profile || !hasPosted);
-  const showMain = session && profile && hasPosted;
+  const showOnboarding = session && !profile;
+  const showMain = session && !!profile;
 
   return (
     <NavigationContainer>
@@ -400,7 +406,7 @@ export default function RootNavigator() {
       {showAuth ? (
         <AuthNavigator />
       ) : showOnboarding ? (
-        <OnboardingNavigator hasProfile={!!profile} />
+        <OnboardingNavigator />
       ) : (
         <MainNavigator />
       )}

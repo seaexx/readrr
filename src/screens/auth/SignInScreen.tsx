@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fonts } from '../../theme/fonts';
 import {
   View,
   Text,
@@ -67,7 +68,7 @@ export default function SignInScreen({ navigation }: Props) {
             <Text className="text-primary text-base">← Back</Text>
           </TouchableOpacity>
 
-          <Text className="text-3xl font-bold mb-2">Welcome Back</Text>
+          <Text className="text-3xl mb-2" style={{ fontFamily: fonts.serifBold }}>Welcome Back</Text>
           <Text className="text-gray-500 mb-8">Sign in to continue</Text>
 
           <Text className="text-sm text-gray-600 mb-2">Email</Text>

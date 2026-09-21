@@ -11,6 +11,7 @@ import {
 import { submitRating } from '../services/ratingsService';
 import Avatar from './Avatar';
 import { Star } from 'phosphor-react-native';
+import { fonts } from '../theme/fonts';
 
 interface Props {
   visible: boolean;
@@ -48,7 +49,7 @@ export default function RatingModal({ visible, swapId, raterId, ratedUser, onDon
     <Modal visible={visible} transparent animationType="slide">
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
         <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
-          <Text style={{ fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 4 }}>
+          <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold, textAlign: 'center', marginBottom: 4 }}>
             Rate your swap
           </Text>
           <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 20 }}>

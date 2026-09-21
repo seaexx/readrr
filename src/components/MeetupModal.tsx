@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Coffee, Books, Storefront, Martini, UsersThree, Buildings, MapPin, MagnifyingGlass, X, IconProps } from 'phosphor-react-native';
+import { fonts } from '../theme/fonts';
 import { proposeMeetup } from '../services/swapsService';
 import { VenueCategory } from '../models/Swap';
 
@@ -339,7 +340,7 @@ export default function MeetupModal({
               marginBottom: 6,
             }}
           >
-            <Text style={{ fontSize: 20, fontWeight: '700' }}>
+            <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold }}>
               {isCounterProposal ? 'Suggest somewhere different' : 'Suggest a meetup spot'}
             </Text>
             <TouchableOpacity onPress={handleCancel}>

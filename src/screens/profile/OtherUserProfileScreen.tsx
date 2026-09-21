@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { DotsThree } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 import { useAuthStore } from '../../store/authStore';
 import { getUserPosts } from '../../services/postsService';
 import { User } from '../../models/User';
@@ -167,7 +168,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
       {/* Profile Header */}
       <View className="items-center pt-6 pb-4 px-6">
         <Avatar avatarUrl={user.avatar_url} username={user.username} size={100} />
-        <Text className="text-2xl font-bold mt-4">@{user.username}</Text>
+        <Text className="text-2xl mt-4" style={{ fontFamily: fonts.serifSemiBold }}>@{user.username}</Text>
         {user.city && <Text className="text-gray-500 mt-1">{user.city}</Text>}
         {user.bio && (
           <Text className="text-gray-700 text-center mt-3 px-4">{user.bio}</Text>

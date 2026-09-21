@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fonts } from '../../theme/fonts';
 import {
   View,
   Text,
@@ -103,7 +104,7 @@ export default function EditProfileScreen({ navigation }: Props) {
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text className="text-primary text-base">Cancel</Text>
             </TouchableOpacity>
-            <Text className="font-semibold text-lg">Edit Profile</Text>
+            <Text className="text-lg" style={{ fontFamily: fonts.serifSemiBold }}>Edit Profile</Text>
             <TouchableOpacity onPress={handleSave} disabled={loading}>
               <Text className={`text-base font-semibold ${loading ? 'text-gray-400' : 'text-primary'}`}>
                 {loading ? 'Saving...' : 'Save'}

@@ -31,6 +31,7 @@ import RatingModal from '../../components/RatingModal';
 import MeetupModal from '../../components/MeetupModal';
 import { sendPushNotification } from '../../services/notificationsService';
 import { Coffee, Books, Storefront, Martini, UsersThree, Buildings, MapPin, Confetti, ChatCircle, Check, PaperPlaneRight, Hourglass } from 'phosphor-react-native';
+import { fonts } from '../../theme/fonts';
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ComponentType<any>; bg: string; text: string }> = {
   coffee_shop:      { label: 'Coffee Shop',    icon: Coffee,      bg: '#fef3c7', text: '#92400e' },
@@ -347,11 +348,11 @@ export default function ChatScreen({ navigation }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3">
             <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 17, fontWeight: '600' }}>Swap Complete</Text>
+          <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold }}>Swap Complete</Text>
         </View>
         <View className="flex-1 items-center justify-center px-8">
           <Confetti size={64} color="#38B6FF" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
+          <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, marginBottom: 8, textAlign: 'center' }}>
             Swap Complete!
           </Text>
           <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center', marginBottom: 24 }}>
@@ -432,7 +433,7 @@ export default function ChatScreen({ navigation }: Props) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <VenueIcon size={22} color={categoryMeta?.text ?? '#4b5563'} weight="regular" />
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: '#1f2937' }}>
+          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: '#1f2937' }}>
             {swap.meetup_venue_name}
           </Text>
           {swap.meetup_venue_address && (

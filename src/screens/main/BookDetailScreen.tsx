@@ -8,6 +8,8 @@ import { useAuthStore } from '../../store/authStore';
 import { Post } from '../../models/Post';
 import { canRequestSwap, createSwapRequest, hasPendingRequest } from '../../services/swapsService';
 import { isBlocked } from '../../services/blockService';
+import { promptSaveToShelf } from '../../utils/shelfPrompt';
+import { fonts } from '../../theme/fonts';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -198,7 +200,7 @@ export default function BookDetailScreen({ navigation }: Props) {
 
         {/* Book Info */}
         <View className="px-6 py-4">
-          <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 4 }}>{post.title}</Text>
+          <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 4 }}>{post.title}</Text>
           {post.author && (
             <Text style={{ fontSize: 17, color: '#4b5563', marginBottom: 16 }}>{post.author}</Text>
           )}
@@ -318,6 +320,26 @@ export default function BookDetailScreen({ navigation }: Props) {
             <View className="bg-gray-100 py-4 rounded-xl">
               <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center' }}>This is your post</Text>
             </View>
+          )}
+
+          {/* Save to shelf */}
+          {!isOwnPost && (
+            <TouchableOpacity
+              onPress={() =>
+                session?.user.id &&
+                promptSaveToShelf(session.user.id, {
+                  isbn: post.isbn,
+                  title: post.title,
+                  author: post.author,
+                  cover_image_url: post.cover_image_url,
+                })
+              }
+              className="border border-primary py-4 rounded-xl mt-3"
+            >
+              <Text style={{ fontSize: 17, fontWeight: '600', color: '#38B6FF', textAlign: 'center' }}>
+                Save to My Shelf
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>

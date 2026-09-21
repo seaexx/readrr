@@ -13,22 +13,50 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "app.readrr",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "app.readrr",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-barcode-scanner",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Readrr uses the camera to scan a book's barcode so you can add it in seconds."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Readrr uses your location to show book swaps near you. Your exact location is never shared with other readers."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Readrr needs access to your photos so you can set a profile picture and add a photo to your book listings."
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -36,7 +64,14 @@
           "color": "#38B6FF",
           "sounds": []
         }
-      ]
-    ]
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "79fe1660-8405-47f6-ad5b-7fe9680cbe87"
+      }
+    },
+    "owner": "chesterfields"
   }
 }
