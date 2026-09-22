@@ -10,7 +10,6 @@ import {
   Platform,
   Alert,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -32,10 +31,6 @@ import { Post, Comment } from '../../models/Post';
 import { Heart, ChatCircle, Bookmark } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import { promptSaveToShelf } from '../../utils/shelfPrompt';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const LEFT_WIDTH = SCREEN_WIDTH * 0.4;
-const RIGHT_WIDTH = SCREEN_WIDTH * 0.6;
 
 interface Props {
   navigation: any;
@@ -247,48 +242,47 @@ export default function PostDetailScreen({ navigation }: Props) {
           <View style={{ width: 50 }} />
         </View>
 
-        {/* Main Content - Side by Side */}
-        <View className="flex-1 flex-row">
-          {/* LEFT SIDE - Book Cover */}
-          <View
-            style={{ width: LEFT_WIDTH }}
-            className="bg-gray-50 p-4 items-center"
-          >
-            {post.image_url ? (
-              <Image
-                source={{ uri: post.image_url }}
-                style={{
-                  width: LEFT_WIDTH - 32,
-                  height: (LEFT_WIDTH - 32) * 1.5,
-                  borderRadius: 8,
-                }}
-                contentFit="cover"
-              />
-            ) : (
-              <BookCover
-                coverUrl={post.cover_image_url}
-                width={LEFT_WIDTH - 32}
-                height={(LEFT_WIDTH - 32) * 1.5}
-                style={{ borderRadius: 8 }}
-              />
-            )}
-          </View>
-
-          {/* RIGHT SIDE - Info + Comments */}
-          <View style={{ width: RIGHT_WIDTH }} className="flex-1">
-            <ScrollView
-              className="flex-1 p-3"
-              showsVerticalScrollIndicator={false}
+        {/* Main Content */}
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16 }}
+        >
+          {/* Book header: cover next to title + author */}
+          <View className="flex-row mb-4">
+            <View
+              style={{
+                borderRadius: 8,
+                backgroundColor: '#fff',
+                shadowColor: '#1e293b',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
             >
-              {/* Book Title */}
-              <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 4 }}>{post.title}</Text>
-
-              {/* Author */}
-              {post.author && (
-                <Text style={{ fontSize: 16, color: '#6b7280', marginBottom: 12 }}>
-                  {post.author}
-                </Text>
+              {post.image_url ? (
+                <Image
+                  source={{ uri: post.image_url }}
+                  style={{ width: 110, height: 165, borderRadius: 8 }}
+                  contentFit="cover"
+                />
+              ) : (
+                <BookCover
+                  coverUrl={post.cover_image_url}
+                  width={110}
+                  height={165}
+                  style={{ borderRadius: 8 }}
+                />
               )}
+            </View>
+            <View className="flex-1 ml-4 justify-center">
+              <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 4 }}>{post.title}</Text>
+              {post.author && (
+                <Text style={{ fontSize: 16, color: '#6b7280' }}>{post.author}</Text>
+              )}
+            </View>
+          </View>
 
               {/* Description */}
               {loadingDescription && (
@@ -415,9 +409,7 @@ export default function PostDetailScreen({ navigation }: Props) {
 
               {/* Bottom padding for scroll */}
               <View className="h-4" />
-            </ScrollView>
-          </View>
-        </View>
+        </ScrollView>
 
         {/* Comment Input */}
         <View className="border-t border-gray-200 px-4 flex-row items-center bg-white" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>

@@ -55,6 +55,11 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       Library lookup exceeds the 8s timeout throws `Open Library lookup failed: [AbortError: Aborted]`
       and surfaces an error. Aborted/timed-out lookups should fail quietly and fall back to the
       stored post data — never alert. (`booksService.fetchWithTimeout`; caller on the book-open path.)
+- [x] **Random logout (device QA 2026-09-22).** FIXED — added the Supabase React Native AppState
+      auto-refresh hook in `src/config/supabase.ts`. Without it RN throttles the background token
+      refresh and the session silently expires, surfacing as a logout when the app is reopened.
+      (If it recurs, next suspects: same account signed in on two devices/simulators, or a manual
+      sign-out path.)
 
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
@@ -84,10 +89,11 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       arrow) when newer content exists. (`FeedScreen.handleTabChange` currently does `setPosts([])`.)
 - [ ] **Profile page redesign.** Current Profile UI is weak — make it minimal and well-designed,
       consistent with the serif + blue/white system. (`ProfileScreen`.) Fold in the header title below.
-- [ ] **Social book detail layout.** Tapping a book in the Feed (social post): the book-cover +
-      comments section layout needs fixing — doesn't look right. (`PostDetailScreen`.)
-- [ ] **Swap book detail cover.** Swaps tab → tap a swap post: the cover is stretched to fill the
-      whole area and looks bad — constrain aspect ratio / sizing. (`BookDetailScreen`.)
+- [x] **Social book detail layout.** DONE — replaced the 40/60 horizontal split with a vertical
+      layout: a cover-next-to-title header, then full-width description / engagement / comments.
+      (`PostDetailScreen`.)
+- [x] **Swap book detail cover.** DONE — cover-only swap posts now show a centered 2:3 cover with a
+      soft shadow on a light backdrop instead of a full-bleed stretch. (`BookDetailScreen`.)
 - [x] **Uniform screen headers.** DONE — added serif "Search" and "Profile" titles matching
       Inbox/Notifications. (`SearchScreen`, `ProfileScreen`.) The Profile redesign (#2) will refine it.
 

@@ -190,12 +190,28 @@ export default function BookDetailScreen({ navigation }: Props) {
             contentFit="cover"
           />
         ) : (
-          // Only cover or no image - use BookCover with fallback
-          <BookCover
-            coverUrl={post.cover_image_url}
-            width={SCREEN_WIDTH}
-            height={350}
-          />
+          // Only a book cover — center it at natural 2:3 proportions on a soft
+          // backdrop instead of stretching it full-bleed (which distorts it).
+          <View style={{ backgroundColor: '#f3f4f6', paddingVertical: 28, alignItems: 'center' }}>
+            <View
+              style={{
+                borderRadius: 10,
+                backgroundColor: '#fff',
+                shadowColor: '#1e293b',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.18,
+                shadowRadius: 12,
+                elevation: 5,
+              }}
+            >
+              <BookCover
+                coverUrl={post.cover_image_url}
+                width={Math.round(SCREEN_WIDTH * 0.5)}
+                height={Math.round(SCREEN_WIDTH * 0.75)}
+                style={{ borderRadius: 10 }}
+              />
+            </View>
+          </View>
         )}
 
         {/* Book Info */}
