@@ -110,7 +110,7 @@ export default function SearchScreen({ navigation }: Props) {
       </View>
 
       {/* Search bar */}
-      <View className="px-4 pt-1 pb-2">
+      <View className="px-4 pt-3 pb-2">
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2.5">
           <MagnifyingGlass size={16} color="#9ca3af" weight="regular" style={{ marginRight: 8 }} />
           <TextInput

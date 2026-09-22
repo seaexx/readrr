@@ -146,13 +146,8 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const renderHeader = () => (
     <View>
-      {/* Screen title */}
-      <View className="px-4 pt-2 pb-1">
-        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Profile</Text>
-      </View>
-
       {/* Profile Header */}
-      <View className="items-center pt-4 pb-4">
+      <View className="items-center pt-6 pb-4">
         <Avatar avatarUrl={profile.avatar_url} username={profile.username} size={100} />
         <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 16 }}>@{profile.username}</Text>
         <Text style={{ fontSize: 15, color: '#6b7280', marginTop: 4 }}>{profile.email}</Text>
@@ -439,7 +434,7 @@ export default function ProfileScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-        <Text className="text-xl font-bold">Profile</Text>
+        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Profile</Text>
         <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
           <Text className="text-primary">Edit</Text>
         </TouchableOpacity>
