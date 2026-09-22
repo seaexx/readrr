@@ -31,6 +31,10 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
@@ -72,6 +76,12 @@
         "projectId": "79fe1660-8405-47f6-ad5b-7fe9680cbe87"
       }
     },
-    "owner": "chesterfields"
+    "owner": "chesterfields",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/79fe1660-8405-47f6-ad5b-7fe9680cbe87"
+    }
   }
 }

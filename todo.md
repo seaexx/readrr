@@ -35,15 +35,17 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 
 ## Priority-ordered remaining work (highest → lowest)
 
-### P0 — gates putting it in a tester's hands
-- [ ] **Merge `feat/serif-restyle-launch-prep` → `main`** (or open a PR). *Your call — trivial.*
-- [ ] **Store accounts:** Apple Developer ($99/yr) + Google Play ($25 once). *Needed for
-      TestFlight / Play Internal (and any iOS install).*
-- [ ] **First EAS build:** `eas build --profile preview` (Android APK sideload / iOS internal),
-      then `--profile production` for the stores. *This is the actual "get it on a phone" step.*
-- [ ] **Host Terms + Privacy** at readrr.app/terms and /privacy. *Links are live in-app; if the
-      pages 404, store review fails and testers hit dead links. Copy is in `docs/LEGAL.md`.* (chip)
-- [ ] **Test push + barcode scan on a REAL device.** *Simulator can't do either; both are core.*
+### P0 — gates putting it in a tester's hands (iOS-first launch)
+- [x] **Apple Developer account** — have it (paid). Google Play deferred (iOS first).
+- [~] **iOS EAS build** — pipeline works (produced an `.ipa`). It crashed on device because the
+      cloud build had no env vars (`.env.local` isn't uploaded); fixed by putting
+      `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `eas.json` `env` (all
+      profiles). **Rebuild → `eas submit` → TestFlight.** Google Books key left out of git — set it
+      as an EAS env var if you want the Google cover fallback in prod (Open Library is primary).
+- [x] **Terms + Privacy drafted** — `web/terms/` + `web/privacy/` (real copy for the actual app).
+      Still to do: replace the `[BRACKETED]` placeholders (entity, contact email, jurisdiction, age),
+      get a legal review, and host so readrr.app/terms + /privacy resolve. See `web/README.md`.
+- [ ] **Test push + barcode scan on a REAL device** — once the env-fixed build is installed.
 
 ### P1 — correctness / safety before real users
 - [x] **Safe swap-post delete + duplicate-post prevention.** DONE — deleting a swap listing that
