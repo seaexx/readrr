@@ -106,6 +106,15 @@ Linked and migrated. **Ongoing workflow:** Claude writes `supabase/migrations/0N
 `supabase db push` applies it to the live DB — no more hand-applying. Re-run
 [`supabase/verify_migrations.sql`](supabase/verify_migrations.sql) anytime to confirm object state.
 
+> **Migration drift caught + resolved (2026-09-22):** `repair --status applied 001..017` had
+> marked 017 (shelf) applied *without running it*, so `shelf_items` never existed (PGRST205 on
+> My Shelf). Fixed by reverting 013–018 in history and re-pushing; all 001–018 are now genuinely
+> applied. Lesson: never `repair --status applied` a migration you didn't actually run.
+- [ ] **uuid portability (P3):** migrations 001/011/012/016 use `uuid_generate_v4()` (uuid-ossp),
+      which only resolves when hand-run in the SQL editor — a fresh `supabase db push` (new env / CI)
+      would fail on them. 017 was switched to `gen_random_uuid()`; standardize the rest before any
+      fresh-DB setup. Not urgent (current DB is fine).
+
 ## How to run
 ```bash
 # Simulator (localhost avoids the LAN-IP timeout):
