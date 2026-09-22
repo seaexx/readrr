@@ -366,8 +366,14 @@ export default function RootNavigator() {
       } else {
         setProfile(null);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch (error: any) {
+      console.error('Error fetching profile:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        status: error?.status ?? error?.statusCode,
+      });
       setProfile(null);
     }
   };
@@ -381,8 +387,14 @@ export default function RootNavigator() {
 
       if (error) throw error;
       setHasPosted((count ?? 0) > 0);
-    } catch (error) {
-      console.error('Error checking posts:', error);
+    } catch (error: any) {
+      console.error('Error checking posts:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        status: error?.status ?? error?.statusCode,
+      });
       setHasPosted(false);
     } finally {
       setLoading(false);
