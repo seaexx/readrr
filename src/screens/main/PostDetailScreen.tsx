@@ -248,40 +248,38 @@ export default function PostDetailScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16 }}
         >
-          {/* Book header: cover next to title + author */}
-          <View className="flex-row mb-4">
+          {/* Book header: centered cover with title + author beneath */}
+          <View className="items-center mb-5">
             <View
               style={{
                 borderRadius: 8,
                 backgroundColor: '#fff',
                 shadowColor: '#1e293b',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 8,
-                elevation: 4,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.18,
+                shadowRadius: 10,
+                elevation: 5,
               }}
             >
               {post.image_url ? (
                 <Image
                   source={{ uri: post.image_url }}
-                  style={{ width: 110, height: 165, borderRadius: 8 }}
+                  style={{ width: 120, height: 180, borderRadius: 8 }}
                   contentFit="cover"
                 />
               ) : (
                 <BookCover
                   coverUrl={post.cover_image_url}
-                  width={110}
-                  height={165}
+                  width={120}
+                  height={180}
                   style={{ borderRadius: 8 }}
                 />
               )}
             </View>
-            <View className="flex-1 ml-4 justify-center">
-              <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 4 }}>{post.title}</Text>
-              {post.author && (
-                <Text style={{ fontSize: 16, color: '#6b7280' }}>{post.author}</Text>
-              )}
-            </View>
+            <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', textAlign: 'center', marginTop: 14, marginBottom: 4 }}>{post.title}</Text>
+            {post.author && (
+              <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>{post.author}</Text>
+            )}
           </View>
 
               {/* Description */}
