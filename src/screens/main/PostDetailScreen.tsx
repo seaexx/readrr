@@ -28,9 +28,11 @@ import BookCover from '../../components/BookCover';
 import CommentItem from '../../components/CommentItem';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Post, Comment } from '../../models/Post';
-import { Heart, ChatCircle, Bookmark } from 'phosphor-react-native';
+import { Heart, ChatCircle, Bookmark, Trash } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import { promptSaveToShelf } from '../../utils/shelfPrompt';
+import { isOnShelf } from '../../services/shelfService';
+import { deletePost } from '../../services/postsService';
 
 interface Props {
   navigation: any;
@@ -53,6 +55,7 @@ export default function PostDetailScreen({ navigation }: Props) {
   const [likeCount, setLikeCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -76,6 +79,32 @@ export default function PostDetailScreen({ navigation }: Props) {
       setDescriptionFetched(true);
     }
   }, [post?.isbn]);
+
+  useEffect(() => {
+    if (post && session?.user.id) {
+      isOnShelf(session.user.id, { isbn: post.isbn, title: post.title })
+        .then(setSaved)
+        .catch(() => {});
+    }
+  }, [post?.id]);
+
+  const handleDelete = () => {
+    Alert.alert('Delete Post', 'Permanently delete this post? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePost(postId);
+            navigation.goBack();
+          } catch {
+            Alert.alert('Error', 'Could not delete post.');
+          }
+        },
+      },
+    ]);
+  };
 
   const loadData = async () => {
     try {
@@ -226,6 +255,8 @@ export default function PostDetailScreen({ navigation }: Props) {
       ? description.substring(0, 200) + '...'
       : description;
 
+  const isOwner = !!post && post.user?.id === session?.user.id;
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <KeyboardAvoidingView
@@ -239,7 +270,13 @@ export default function PostDetailScreen({ navigation }: Props) {
             <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
           </TouchableOpacity>
           <Text style={{ flex: 1, textAlign: 'center', fontSize: 19, fontFamily: fonts.serifSemiBold }}>Post</Text>
-          <View style={{ width: 50 }} />
+          {isOwner ? (
+            <TouchableOpacity onPress={handleDelete} style={{ width: 50, alignItems: 'flex-end' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Trash size={22} color="#ef4444" weight="regular" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 50 }} />
+          )}
         </View>
 
         {/* Main Content */}
@@ -372,14 +409,14 @@ export default function PostDetailScreen({ navigation }: Props) {
                       title: post.title,
                       author: post.author,
                       cover_image_url: post.cover_image_url,
-                    })
+                    }, () => setSaved(true))
                   }
                   className="flex-row items-center"
                   style={{ marginLeft: 'auto' }}
                   activeOpacity={0.7}
                 >
-                  <Bookmark size={24} color="#6b7280" weight="regular" style={{ marginRight: 4 }} />
-                  <Text style={{ fontSize: 15, color: '#374151', fontWeight: '500' }}>Save</Text>
+                  <Bookmark size={24} color={saved ? '#38B6FF' : '#6b7280'} weight={saved ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 15, color: saved ? '#38B6FF' : '#374151', fontWeight: '500' }}>{saved ? 'Saved' : 'Save'}</Text>
                 </TouchableOpacity>
               </View>
 

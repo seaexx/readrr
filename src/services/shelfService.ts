@@ -127,3 +127,28 @@ export async function removeShelfItem(itemId: string): Promise<void> {
 export function normalizeTitle(title: string): string {
   return title.toLowerCase().trim().replace(/\s+/g, ' ');
 }
+
+// Is this book already on any of the user's shelves? Matched by ISBN when
+// present, else by title — mirrors saveToShelf's dedup so the Save button can
+// show "Saved".
+export async function isOnShelf(
+  userId: string,
+  book: { isbn?: string | null; title: string }
+): Promise<boolean> {
+  if (book.isbn) {
+    const { data } = await supabase
+      .from('shelf_items')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('isbn', book.isbn)
+      .maybeSingle();
+    if (data) return true;
+  }
+  const { data } = await supabase
+    .from('shelf_items')
+    .select('id')
+    .eq('user_id', userId)
+    .ilike('title', book.title.trim())
+    .maybeSingle();
+  return !!data;
+}

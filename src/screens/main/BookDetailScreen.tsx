@@ -9,6 +9,7 @@ import { Post } from '../../models/Post';
 import { canRequestSwap, createSwapRequest, hasPendingRequest } from '../../services/swapsService';
 import { isBlocked } from '../../services/blockService';
 import { promptSaveToShelf } from '../../utils/shelfPrompt';
+import { isOnShelf } from '../../services/shelfService';
 import { fonts } from '../../theme/fonts';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
@@ -38,8 +39,15 @@ export default function BookDetailScreen({ navigation }: Props) {
     loadPost();
   }, [postId]);
 
+  const [saved, setSaved] = useState(false);
+
   useEffect(() => {
     checkSwapEligibility();
+    if (post && session?.user.id) {
+      isOnShelf(session.user.id, { isbn: post.isbn, title: post.title })
+        .then(setSaved)
+        .catch(() => {});
+    }
   }, [post, session]);
 
   const checkSwapEligibility = async () => {
@@ -348,12 +356,12 @@ export default function BookDetailScreen({ navigation }: Props) {
                   title: post.title,
                   author: post.author,
                   cover_image_url: post.cover_image_url,
-                })
+                }, () => setSaved(true))
               }
-              className="border border-primary py-4 rounded-xl mt-3"
+              className={`py-4 rounded-xl mt-3 ${saved ? 'bg-green-50 border border-green-200' : 'border border-primary'}`}
             >
-              <Text style={{ fontSize: 17, fontWeight: '600', color: '#38B6FF', textAlign: 'center' }}>
-                Save to My Shelf
+              <Text style={{ fontSize: 17, fontWeight: '600', color: saved ? '#15803d' : '#38B6FF', textAlign: 'center' }}>
+                {saved ? '✓ Saved to My Shelf' : 'Save to My Shelf'}
               </Text>
             </TouchableOpacity>
           )}

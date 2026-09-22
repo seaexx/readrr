@@ -1,9 +1,8 @@
-// Books lookup service
+// Books lookup service — Google Books API.
 //
-// Primary: Open Library (https://openlibrary.org) — free, no API key,
-// no daily quota. Covers come from covers.openlibrary.org.
-// Optional fallback: Google Books — only used when
-// EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY is configured in .env.
+// Requires EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY (set in .env.local for local dev and
+// in eas.json `env` for builds). A key gives dedicated quota, so lookups are
+// reliable — the previous keyless/Open-Library path returned frequent misses.
 
 export interface BookInfo {
   isbn: string | null;
@@ -15,31 +14,14 @@ export interface BookInfo {
   description?: string;
 }
 
-const OL_SEARCH_FIELDS = 'title,author_name,cover_i,isbn,publisher,publish_date';
+const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 const REQUEST_TIMEOUT_MS = 8000;
 
-// Extract book ID from a Google Books image URL
-function extractBookId(url: string): string | null {
-  const match = url.match(/[?&]id=([^&]+)/);
-  return match ? match[1] : null;
+function getApiKey(): string | undefined {
+  return process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY;
 }
 
-// Build Google Books cover URL (fallback - lower quality but always available)
-function buildGoogleBooksUrl(bookId: string): string {
-  return `https://books.google.com/books/content?id=${bookId}&printsec=frontcover&img=1&zoom=1`;
-}
-
-// Open Library covers by ISBN (works even when no cover_i is present;
-// serves a blank placeholder rather than erroring)
-function buildOpenLibraryUrl(isbn: string): string {
-  return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
-}
-
-function buildOpenLibraryIdUrl(coverId: number): string {
-  return `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
-}
-
-// fetch with timeout so a hanging request can't freeze post creation
+// fetch with a timeout so a hanging request can't freeze the lookup UI.
 async function fetchWithTimeout(url: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -50,140 +32,77 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
-// Normalize user/scanner input: strip hyphens, spaces; uppercase X for ISBN-10
+// Normalize user/scanner input: strip hyphens/spaces; uppercase X for ISBN-10.
 export function normalizeIsbn(input: string): string {
   return input.replace(/[^0-9Xx]/g, '').toUpperCase();
 }
 
-// Pick the best ISBN from an Open Library doc's isbn array
-// (mixed lengths/junk; prefer a 13-digit, then a 10-digit)
-function pickIsbn(isbns: unknown): string | null {
-  if (!Array.isArray(isbns)) return null;
-  const valid = isbns.filter(
-    (i): i is string => typeof i === 'string' && /^[0-9]{9}[0-9X]$/.test(i.toUpperCase())
-  );
-  return (
-    valid.find((i) => i.length === 13 && i.startsWith('978')) ||
-    valid.find((i) => i.length === 13) ||
-    valid.find((i) => i.length === 10) ||
-    null
-  );
+function extractBookId(url: string): string | null {
+  const match = url.match(/[?&]id=([^&]+)/);
+  return match ? match[1] : null;
 }
 
-interface OlDoc {
-  title?: string;
-  author_name?: string[];
-  cover_i?: number;
-  isbn?: string[];
-  publisher?: string[];
-  publish_date?: string[];
+// Best available cover for a Google Books volume, forced to https.
+function coverFrom(volumeInfo: any): string | null {
+  const links = volumeInfo?.imageLinks;
+  if (!links) return null;
+  const url =
+    links.extraLarge || links.large || links.medium || links.small || links.thumbnail;
+  if (!url) return null;
+  const id = extractBookId(url);
+  if (id) {
+    return `https://books.google.com/books/content?id=${id}&printsec=frontcover&img=1&zoom=1`;
+  }
+  return url.replace('http://', 'https://');
 }
 
-// Open Library search endpoint: one call returns everything we need.
-// Free and unmetered for reasonable use.
-async function fetchBookFromOpenLibrary(isbn: string): Promise<BookInfo> {
-  const response = await fetchWithTimeout(
-    `https://openlibrary.org/search.json?q=isbn:${isbn}&fields=${OL_SEARCH_FIELDS}&limit=1`
-  );
-  const json = await response.json();
-  const doc: OlDoc | undefined = json?.docs?.[0];
-
-  if (!doc?.title) throw new Error(`ISBN ${isbn} not found on Open Library`);
-
+function toBookInfo(item: any): BookInfo {
+  const v = item?.volumeInfo || {};
+  const ids: any[] = v.industryIdentifiers || [];
+  const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier;
+  const isbn10 = ids.find((i) => i.type === 'ISBN_10')?.identifier;
   return {
-    isbn,
-    title: doc.title,
-    author: doc.author_name?.[0] || 'Unknown Author',
-    cover_image_url: doc.cover_i ? buildOpenLibraryIdUrl(doc.cover_i) : buildOpenLibraryUrl(isbn),
-    publisher: doc.publisher?.[0],
-    publishedDate: doc.publish_date?.[0],
+    isbn: isbn13 || isbn10 || null,
+    title: v.title || 'Unknown Title',
+    author: Array.isArray(v.authors) ? v.authors.join(', ') : v.authors || 'Unknown Author',
+    cover_image_url: coverFrom(v),
+    publisher: v.publisher,
+    publishedDate: v.publishedDate,
+    description: v.description,
   };
 }
 
-// Google Books — requires a key so we get dedicated quota instead of the
-// shared anonymous pool (which regularly returns HTTP 429).
-async function fetchBookFromGoogleBooks(isbn: string, apiKey: string): Promise<BookInfo> {
-  const response = await fetchWithTimeout(
-    `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${apiKey}`
-  );
-  const json = await response.json();
-
-  if (!json.items || json.items.length === 0) {
-    throw new Error(`ISBN ${isbn} not found on Google Books`);
-  }
-
-  const book = json.items[0].volumeInfo;
-
-  // Prefer the Open Library cover; else use whatever Google provides
-  let cover: string | null = buildOpenLibraryUrl(isbn);
-  if (book.imageLinks) {
-    const url =
-      book.imageLinks.extraLarge ||
-      book.imageLinks.large ||
-      book.imageLinks.medium ||
-      book.imageLinks.small ||
-      book.imageLinks.thumbnail;
-    const bookId = url ? extractBookId(url) : null;
-    if (bookId) cover = buildGoogleBooksUrl(bookId);
-  }
-
-  return {
-    isbn,
-    title: book.title || 'Unknown Title',
-    author: book.authors?.join(', ') || 'Unknown Author',
-    cover_image_url: cover,
-    publisher: book.publisher,
-    publishedDate: book.publishedDate,
-    description: book.description,
-  };
-}
-
-// Lookup by ISBN. Open Library first; falls back to Google Books only if
-// an API key is configured. Throws with a user-friendly message on failure.
+// Look up a single book by ISBN (from a barcode scan). Throws a friendly error
+// if nothing matches or lookup is unavailable.
 export async function fetchBookByISBN(rawIsbn: string): Promise<BookInfo> {
   const isbn = normalizeIsbn(rawIsbn);
-
-  try {
-    return await fetchBookFromOpenLibrary(isbn);
-  } catch (olError: any) {
-    // Aborts (the 8s timeout) and plain misses are expected here — fall back
-    // quietly. console.error would trip the dev LogBox red popup for a
-    // non-error, so log at a lower level.
-    console.log('Open Library lookup failed, trying fallback:', olError?.message || olError);
-
-    const apiKey = process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY;
-    if (!apiKey) throw new Error('Book not found. Check the ISBN and try again.');
-
-    try {
-      return await fetchBookFromGoogleBooks(isbn, apiKey);
-    } catch (gbError: any) {
-      console.log('Google Books lookup failed:', gbError?.message || gbError);
-      throw new Error('Book not found. Check the ISBN and try again.');
-    }
+  const key = getApiKey();
+  if (!key) {
+    throw new Error('Book lookup is temporarily unavailable. Please try again later.');
   }
-}
 
-// Title/keyword search (used for browsing books without a barcode).
-// Same source as the primary lookup so behaviour stays consistent.
-export async function searchBooks(query: string): Promise<BookInfo[]> {
-  const response = await fetchWithTimeout(
-    `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=${OL_SEARCH_FIELDS}&limit=10`
-  );
+  const response = await fetchWithTimeout(`${GOOGLE_BOOKS_API}?q=isbn:${isbn}&key=${key}`);
   const json = await response.json();
 
-  return ((json?.docs || []) as OlDoc[]).map((doc) => {
-    const isbn = pickIsbn(doc.isbn);
-    return {
-      isbn,
-      title: doc.title || 'Unknown Title',
-      author: doc.author_name?.[0] || 'Unknown Author',
-      cover_image_url: doc.cover_i
-        ? buildOpenLibraryIdUrl(doc.cover_i)
-        : isbn
-        ? buildOpenLibraryUrl(isbn)
-        : null,
-      publisher: doc.publisher?.[0],
-      publishedDate: doc.publish_date?.[0],
-    };
-  });
+  if (!json?.items?.length) {
+    throw new Error('Book not found. Try searching by title instead.');
+  }
+  return toBookInfo(json.items[0]);
+}
+
+// Title / author search. Returns [] on any failure so the UI can show an empty state.
+export async function searchBooks(query: string): Promise<BookInfo[]> {
+  const key = getApiKey();
+  if (!key) return [];
+
+  try {
+    const response = await fetchWithTimeout(
+      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=12&key=${key}`
+    );
+    const json = await response.json();
+    return ((json?.items as any[]) || []).map(toBookInfo);
+  } catch (e: any) {
+    console.log('Book search failed:', e?.message || e);
+    return [];
+  }
 }

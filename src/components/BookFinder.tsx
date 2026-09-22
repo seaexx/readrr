@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  StyleSheet,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -13,20 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BarcodeScanner from './BarcodeScanner';
 import BookCover from './BookCover';
 import { fetchBookByISBN, searchBooks, BookInfo } from '../services/booksService';
-import { MagnifyingGlass, Barcode, PencilSimple, X } from 'phosphor-react-native';
+import { MagnifyingGlass, Barcode, X } from 'phosphor-react-native';
 import { fonts } from '../theme/fonts';
-
-const styles = StyleSheet.create({
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    marginBottom: 12,
-  },
-});
 
 interface Props {
   onSelect: (book: BookInfo) => void;
@@ -34,11 +21,9 @@ interface Props {
   title?: string;
 }
 
-type Mode = 'choice' | 'scan' | 'search' | 'manual';
+type Mode = 'choice' | 'scan' | 'search';
 
-// Shared book picker: barcode scan, title/author search (Open Library),
-// or manual title+author entry when the catalog misses a book.
-// Emits a BookInfo (isbn may be null for manual entries).
+// Shared book picker: barcode scan or title/author search (Google Books).
 export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }: Props) {
   const [mode, setMode] = useState<Mode>('choice');
   const [query, setQuery] = useState('');
@@ -46,8 +31,6 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
-  const [manualTitle, setManualTitle] = useState('');
-  const [manualAuthor, setManualAuthor] = useState('');
 
   const handleBarcodeScanned = async (isbn: string) => {
     setMode('choice');
@@ -56,7 +39,15 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
       const book = await fetchBookByISBN(isbn);
       onSelect(book);
     } catch {
-      Alert.alert('Book Not Found', 'Could not find that ISBN. Try searching by title or enter it manually.');
+      // Never dead-end: offer to search by title (and the Back/options stay visible).
+      Alert.alert(
+        'Book not found',
+        "We couldn't find that barcode. Try searching by title instead.",
+        [
+          { text: 'Search by title', onPress: () => setMode('search') },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
     } finally {
       setLookingUp(false);
     }
@@ -75,20 +66,6 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
     } finally {
       setSearching(false);
     }
-  };
-
-  const handleManualSubmit = () => {
-    const bookTitle = manualTitle.trim();
-    if (!bookTitle) {
-      Alert.alert('Title Required', 'Please enter at least a book title.');
-      return;
-    }
-    onSelect({
-      isbn: null,
-      title: bookTitle,
-      author: manualAuthor.trim() || 'Unknown Author',
-      cover_image_url: null,
-    });
   };
 
   if (mode === 'scan') {
@@ -110,7 +87,7 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
       )}
 
       <Text className="text-2xl mb-2" style={{ fontFamily: fonts.serifBold }}>{title}</Text>
-      <Text className="text-gray-500 mb-6">Scan, search, or enter it yourself</Text>
+      <Text className="text-gray-500 mb-6">Scan the barcode or search for your book</Text>
 
       {mode === 'choice' && (
         <>
@@ -130,10 +107,6 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
           >
             <MagnifyingGlass size={20} color="#38B6FF" weight="regular" />
             <Text className="text-primary text-center font-semibold text-lg">Search by Title or Author</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => setMode('manual')} className="py-3">
-            <Text className="text-gray-500 text-center">Can't find it? Enter it manually</Text>
           </TouchableOpacity>
         </>
       )}
@@ -201,53 +174,15 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
             ListEmptyComponent={
               hasSearched && !searching ? (
                 <View className="items-center py-8">
-                  <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 12 }}>
-                    No results for "{query}"
+                  <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center' }}>
+                    No results for "{query}". Try a different title or author.
                   </Text>
-                  <TouchableOpacity onPress={() => setMode('manual')}>
-                    <Text style={{ fontSize: 15, color: '#38B6FF', fontWeight: '600' }}>
-                      Enter it manually instead
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               ) : null
             }
           />
 
           <TouchableOpacity onPress={() => setMode('choice')} className="py-3">
-            <Text className="text-gray-500 text-center">← All options</Text>
-          </TouchableOpacity>
-        </>
-      )}
-
-      {mode === 'manual' && (
-        <>
-          <Text className="text-sm text-gray-600 mb-2">Book title *</Text>
-          <TextInput
-            value={manualTitle}
-            onChangeText={setManualTitle}
-            placeholder="e.g. The Left Hand of Darkness"
-            placeholderTextColor="#9ca3af"
-            style={styles.textInput}
-          />
-          <Text className="text-sm text-gray-600 mb-2">Author</Text>
-          <TextInput
-            value={manualAuthor}
-            onChangeText={setManualAuthor}
-            placeholder="e.g. Ursula K. Le Guin"
-            placeholderTextColor="#9ca3af"
-            style={styles.textInput}
-          />
-          <TouchableOpacity
-            onPress={handleManualSubmit}
-            disabled={!manualTitle.trim()}
-            className={`py-4 rounded-xl flex-row items-center justify-center ${manualTitle.trim() ? 'bg-primary' : 'bg-gray-300'}`}
-            style={{ gap: 8 }}
-          >
-            <PencilSimple size={18} color="#fff" weight="regular" />
-            <Text className="text-white text-center font-semibold text-lg">Use This Book</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setMode('choice')} className="py-3 mt-2">
             <Text className="text-gray-500 text-center">← All options</Text>
           </TouchableOpacity>
         </>

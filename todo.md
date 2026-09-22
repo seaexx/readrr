@@ -65,6 +65,18 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       (If it recurs, next suspects: same account signed in on two devices/simulators, or a manual
       sign-out path.)
 
+### Device QA — round 2 (2026-09-23, from TestFlight/device testing)
+- [x] **Book lookup is now Google-only** — rewrote `booksService` (Open Library removed) and added
+      `EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY` to every `eas.json` profile. Root cause of "scan always says
+      book not found": the production build had no Google key, so it fell back to Open Library only,
+      which was failing. ⚠️ Restrict the key in Google Cloud (Books API + iOS bundle id).
+- [x] **Scanner dead-end fixed** — a scan miss now offers "Search by title" instead of trapping you.
+- [x] **Manual entry removed** from BookFinder (scan or search only).
+- [x] **Save → "Saved"** — Save button reflects shelf state (`shelfService.isOnShelf`; PostDetail + BookDetail).
+- [x] **Social post delete** — owner now sees a trash button on the post (PostDetail).
+- [ ] **Rebuild + resubmit to TestFlight** so these reach the device (verify in the simulator first).
+- [ ] `app.json` android `permissions` are duplicated — harmless for iOS; dedupe before an Android build.
+
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
       created, readers who have that book on their want-to-read shelf within 25 mi get a push +

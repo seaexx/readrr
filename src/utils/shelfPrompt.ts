@@ -9,13 +9,18 @@ const OPTIONS: { label: string; value: ShelfName }[] = [
 
 // Action sheet to save a book onto one of the three shelves.
 // If the book is already shelved anywhere it is moved instead.
-export function promptSaveToShelf(userId: string, book: ShelfBookInput) {
+export function promptSaveToShelf(
+  userId: string,
+  book: ShelfBookInput,
+  onSaved?: () => void
+) {
   Alert.alert('Save to Shelf', `"${book.title}" by ${book.author || 'Unknown Author'}`, [
     ...OPTIONS.map((o) => ({
       text: o.label,
       onPress: async () => {
         try {
           await saveToShelf(userId, book, o.value);
+          onSaved?.();
           Alert.alert('Saved', `Added to ${o.label}.`);
         } catch {
           Alert.alert('Error', 'Could not save. Please try again.');
