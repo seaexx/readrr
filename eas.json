@@ -12,8 +12,7 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://kdringlaxizrryomgmuq.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "***REMOVED***",
-        "EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY": "***REMOVED***"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "***REMOVED***"
       }
     },
     "preview": {
@@ -27,8 +26,7 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://kdringlaxizrryomgmuq.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "***REMOVED***",
-        "EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY": "***REMOVED***"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "***REMOVED***"
       }
     },
     "production": {
@@ -36,8 +34,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://kdringlaxizrryomgmuq.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "***REMOVED***",
-        "EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY": "***REMOVED***"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "***REMOVED***"
       }
     }
   },
