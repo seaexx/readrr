@@ -505,7 +505,8 @@ export default function FeedScreen({ navigation }: Props) {
                 <Bookmark size={12} color="#15803d" weight="fill" />
                 <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '700' }}>On your wishlist</Text>
               </View>
-            )}            {post.swap_type && (
+            )}
+            {post.swap_type && (
               <View className="bg-blue-100 px-3 py-1.5 rounded-full">
                 <Text style={{ fontSize: 13, color: '#1d4ed8' }} className="capitalize">{post.swap_type}</Text>
               </View>
