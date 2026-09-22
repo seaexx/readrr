@@ -51,6 +51,10 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       repeatedly.* (`deletePost` in `postsService.ts`, `ProfileScreen` delete flow.) (chip)
 - [ ] **Follows: wire into UI or remove.** *`followsService` + 2 RPCs exist, used in zero
       screens — a "social" app with no social graph in the UI.* (chip)
+- [ ] **Book-lookup AbortError leaks to the UI (device QA 2026-09-22).** Tapping a book whose Open
+      Library lookup exceeds the 8s timeout throws `Open Library lookup failed: [AbortError: Aborted]`
+      and surfaces an error. Aborted/timed-out lookups should fail quietly and fall back to the
+      stored post data — never alert. (`booksService.fetchWithTimeout`; caller on the book-open path.)
 
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
@@ -72,6 +76,20 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [ ] **Chat send-failure copy** for blocked users (generic alert today).
 - [ ] **Optional:** drop `RECORD_AUDIO` from `app.json` android permissions + set
       `recordAudioAndroid: false` on expo-camera (barcode doesn't need the mic; Play asks about it).
+
+#### UI/UX polish — device QA (2026-09-22)
+- [ ] **Tab switch flashes an empty state.** Switching Feed/Swaps clears the list, so it shows
+      "No posts/swaps available" for a beat before it reloads. Cache each tab's last results (show
+      them instantly), refresh in the background, and show a subtle "pull to refresh" hint (an
+      arrow) when newer content exists. (`FeedScreen.handleTabChange` currently does `setPosts([])`.)
+- [ ] **Profile page redesign.** Current Profile UI is weak — make it minimal and well-designed,
+      consistent with the serif + blue/white system. (`ProfileScreen`.) Fold in the header title below.
+- [ ] **Social book detail layout.** Tapping a book in the Feed (social post): the book-cover +
+      comments section layout needs fixing — doesn't look right. (`PostDetailScreen`.)
+- [ ] **Swap book detail cover.** Swaps tab → tap a swap post: the cover is stretched to fill the
+      whole area and looks bad — constrain aspect ratio / sizing. (`BookDetailScreen`.)
+- [ ] **Uniform screen headers.** Add "Search" and "Profile" titles at the top of those screens so
+      every page matches Inbox/Notifications. (`SearchScreen`, `ProfileScreen`.)
 
 ---
 
