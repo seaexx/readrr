@@ -87,8 +87,10 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       "No posts/swaps available" for a beat before it reloads. Cache each tab's last results (show
       them instantly), refresh in the background, and show a subtle "pull to refresh" hint (an
       arrow) when newer content exists. (`FeedScreen.handleTabChange` currently does `setPosts([])`.)
-- [ ] **Profile page redesign.** Current Profile UI is weak — make it minimal and well-designed,
-      consistent with the serif + blue/white system. (`ProfileScreen`.) Fold in the header title below.
+- [x] **Profile page redesign.** DONE — removed the skeuomorphic wooden shelves + cramped 3-col
+      grid for a clean centered hero (avatar, @username, city, bio), a single 3-stat row
+      (Swaps / Rating / Books), serif content tabs, a Feed-style 2-column hero-cover grid, and a
+      quiet footer (neutral Sign Out; Terms / Privacy / Delete as small links). (`ProfileScreen`.)
 - [x] **Social book detail layout.** DONE — replaced the 40/60 horizontal split with a vertical
       layout: a cover-next-to-title header, then full-width description / engagement / comments.
       (`PostDetailScreen`.)

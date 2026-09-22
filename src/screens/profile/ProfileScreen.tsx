@@ -22,8 +22,9 @@ import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BOOK_WIDTH = (SCREEN_WIDTH - 48) / 3; // 3 columns with padding
-const BOOK_HEIGHT = BOOK_WIDTH * 1.5;
+const GRID_GAP = 12;
+const CARD_W = (SCREEN_WIDTH - 32 - GRID_GAP) / 2; // 2 columns, 16px side padding
+const CARD_H = Math.round(CARD_W * 1.5);
 
 interface Props {
   navigation: any;
@@ -146,62 +147,77 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const renderHeader = () => (
     <View>
-      {/* Profile Header */}
-      <View className="items-center pt-6 pb-4">
-        <Avatar avatarUrl={profile.avatar_url} username={profile.username} size={100} />
-        <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 16 }}>@{profile.username}</Text>
-        <Text style={{ fontSize: 15, color: '#6b7280', marginTop: 4 }}>{profile.email}</Text>
-        {profile.city && <Text style={{ fontSize: 15, color: '#6b7280' }}>{profile.city}</Text>}
+      {/* Profile hero */}
+      <View className="items-center px-6 pt-2 pb-5">
+        <Avatar avatarUrl={profile.avatar_url} username={profile.username} size={96} />
+        <Text style={{ fontSize: 24, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 14 }}>@{profile.username}</Text>
+        {profile.city && (
+          <Text style={{ fontSize: 14, color: '#9ca3af', marginTop: 4 }}>{profile.city}</Text>
+        )}
         {profile.bio && (
-          <Text style={{ fontSize: 15, color: '#374151', textAlign: 'center', marginTop: 12, paddingHorizontal: 24 }}>
+          <Text style={{ fontSize: 15, color: '#4b5563', textAlign: 'center', marginTop: 12, lineHeight: 21 }}>
             {profile.bio}
           </Text>
         )}
 
-        {/* Edit + Shelf Buttons */}
-        <View className="flex-row justify-center mt-4" style={{ gap: 12 }}>
+        {/* Actions */}
+        <View className="flex-row mt-5" style={{ gap: 10 }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('EditProfile')}
             className="border border-gray-300 px-6 py-2.5 rounded-full"
           >
-            <Text style={{ fontSize: 15, fontWeight: '500', color: '#374151' }}>Edit Profile</Text>
+            <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Shelf')}
-            className="border border-gray-300 px-6 py-2.5 rounded-full"
+            className="px-6 py-2.5 rounded-full"
+            style={{ backgroundColor: '#38B6FF' }}
           >
-            <Text style={{ fontSize: 15, fontWeight: '500', color: '#374151' }}>My Shelf</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>My Shelf</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Stats */}
-      <View className="flex-row justify-around py-3 border-b border-gray-100 mx-6">
-        <View className="items-center">
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#10b981' }}>{profile.total_swaps || 0}</Text>
-          <Text style={{ fontSize: 13, color: '#6b7280' }}>Swaps</Text>
+      <View
+        className="flex-row mx-6"
+        style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f3f4f6', paddingVertical: 14 }}
+      >
+        <View className="flex-1 items-center">
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{profile.total_swaps || 0}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Swaps</Text>
         </View>
-        <View className="items-center">
-          <Text style={{ fontSize: 18, fontWeight: '700' }}>{profile.avg_rating?.toFixed(1) || '0.0'}</Text>
-          <Text style={{ fontSize: 13, color: '#6b7280' }}>Rating</Text>
+        <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
+        <View className="flex-1 items-center">
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{profile.avg_rating?.toFixed(1) || '0.0'}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Rating</Text>
+        </View>
+        <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
+        <View className="flex-1 items-center">
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{posts.length}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Books</Text>
         </View>
       </View>
 
-      {/* Post type tabs */}
-      <View className="flex-row border-b border-gray-200">
+      {/* Content tabs */}
+      <View className="flex-row mt-2">
         <TouchableOpacity
           onPress={() => setActiveTab('posts')}
-          className={`flex-1 py-3 items-center ${activeTab === 'posts' ? 'border-b-2 border-black' : ''}`}
+          className="flex-1 py-3 items-center"
+          style={activeTab === 'posts' ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
         >
-          <Text style={{ fontSize: 20, fontWeight: '700' }}>{socialPosts.length}</Text>
-          <Text style={{ fontSize: 14, color: activeTab === 'posts' ? '#000' : '#6b7280' }}>Posts</Text>
+          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'posts' ? '#38B6FF' : '#9ca3af' }}>
+            Posts ({socialPosts.length})
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setActiveTab('swaps')}
-          className={`flex-1 py-3 items-center ${activeTab === 'swaps' ? 'border-b-2 border-black' : ''}`}
+          className="flex-1 py-3 items-center"
+          style={activeTab === 'swaps' ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
         >
-          <Text style={{ fontSize: 20, fontWeight: '700' }}>{swapPosts.length}</Text>
-          <Text style={{ fontSize: 14, color: activeTab === 'swaps' ? '#000' : '#6b7280' }}>Listed</Text>
+          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'swaps' ? '#38B6FF' : '#9ca3af' }}>
+            Listed ({swapPosts.length})
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -284,135 +300,101 @@ export default function ProfileScreen({ navigation }: Props) {
     Alert.alert(item.title, 'What would you like to do?', options);
   };
 
-  const renderShelf = () => (
-    <View style={{
-      height: 14,
-      marginHorizontal: 8,
-      backgroundColor: '#8B6914',
-      borderRadius: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.3,
-      shadowRadius: 3,
-      elevation: 5,
-    }}>
-      <View style={{
-        height: 4,
-        backgroundColor: '#A67C00',
-        borderTopLeftRadius: 2,
-        borderTopRightRadius: 2,
-      }} />
-      <View style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        backgroundColor: '#6B5200',
-        borderBottomLeftRadius: 2,
-        borderBottomRightRadius: 2,
-      }} />
-    </View>
-  );
+  const renderBooks = () => (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        columnGap: GRID_GAP,
+      }}
+    >
+      {filteredPosts.map((item) => {
+        const handlePress = () => {
+          if (item.post_type === 'swap') {
+            navigation.navigate('BookDetail', { postId: item.id });
+          } else {
+            navigation.navigate('PostDetail', { postId: item.id });
+          }
+        };
+        const unavailable = item.post_type === 'swap' && item.availability !== 'available';
 
-  const renderBookRow = (row: Post[], rowIndex: number) => (
-    <View key={rowIndex}>
-      <View style={{ flexDirection: 'row', paddingHorizontal: 12, justifyContent: 'flex-start' }}>
-        {row.map((item) => {
-          const handlePress = () => {
-            if (item.post_type === 'swap') {
-              navigation.navigate('BookDetail', { postId: item.id });
-            } else {
-              navigation.navigate('PostDetail', { postId: item.id });
-            }
-          };
-
-          return (
-            <TouchableOpacity
-              key={item.id}
-              onPress={handlePress}
-              onLongPress={() => handlePostLongPress(item)}
-              delayLongPress={400}
-              style={{ width: BOOK_WIDTH, height: BOOK_HEIGHT, marginHorizontal: 4 }}
+        return (
+          <TouchableOpacity
+            key={item.id}
+            onPress={handlePress}
+            onLongPress={() => handlePostLongPress(item)}
+            delayLongPress={400}
+            activeOpacity={0.85}
+            style={{ width: CARD_W, marginBottom: 18 }}
+          >
+            <View
+              style={{
+                width: CARD_W,
+                height: CARD_H,
+                borderRadius: 8,
+                backgroundColor: '#fff',
+                shadowColor: '#1e293b',
+                shadowOffset: { width: 0, height: 5 },
+                shadowOpacity: 0.16,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
             >
-              {item.post_type === 'swap' && item.image_url ? (
-                <Image
-                  source={{ uri: item.image_url }}
-                  style={{ width: '100%', height: '100%', borderRadius: 4 }}
-                  contentFit="cover"
-                />
-              ) : (
-                <BookCover
-                  coverUrl={item.cover_image_url}
-                  width={BOOK_WIDTH}
-                  height={BOOK_HEIGHT}
-                  style={{ borderRadius: 4 }}
-                />
-              )}
-              {item.post_type === 'swap' && item.availability !== 'available' && (
-                <View style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundColor: 'rgba(0,0,0,0.45)',
-                  borderRadius: 4,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
-                    {item.availability === 'pending' ? 'PENDING' : 'SWAPPED'}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {renderShelf()}
+              <View style={{ width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#f3f4f6' }}>
+                {item.post_type === 'swap' && item.image_url ? (
+                  <Image source={{ uri: item.image_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                ) : (
+                  <BookCover coverUrl={item.cover_image_url} width={CARD_W} height={CARD_H} style={{ borderRadius: 8 }} />
+                )}
+                {unavailable && (
+                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                      {item.availability === 'pending' ? 'PENDING' : 'SWAPPED'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <Text style={{ fontSize: 13, fontFamily: fonts.serifMedium, color: '#1a1a1a', marginTop: 6 }} numberOfLines={1}>
+              {item.title}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
-
-  const getRows = (data: Post[]) => {
-    const rows: Post[][] = [];
-    for (let i = 0; i < data.length; i += 3) {
-      rows.push(data.slice(i, i + 3));
-    }
-    return rows;
-  };
-
-  const renderBooks = () => {
-    const rows = getRows(filteredPosts);
-    return <View>{rows.map((row, i) => renderBookRow(row, i))}</View>;
-  };
 
   const renderFooter = () => (
-    <View className="px-6 py-6 mt-4">
+    <View className="px-6 pt-8 pb-4">
       <TouchableOpacity
         onPress={handleSignOut}
-        className="border border-red-500 py-4 rounded-xl"
+        className="border border-gray-300 py-3.5 rounded-xl"
       >
-        <Text className="text-red-500 text-center font-semibold text-lg">
+        <Text style={{ textAlign: 'center', fontSize: 15, fontWeight: '600', color: '#374151' }}>
           Sign Out
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={handleDeleteAccount}
-        className="mt-3 border border-gray-300 py-4 rounded-xl"
-      >
-        <Text className="text-gray-500 text-center font-semibold">Delete Account</Text>
-      </TouchableOpacity>
-
-      <View className="flex-row justify-center mt-6 gap-6">
+      <View className="flex-row justify-center mt-6" style={{ gap: 20 }}>
         <Text
-          style={{ fontSize: 13, color: '#38B6FF', fontWeight: '500' }}
+          style={{ fontSize: 13, color: '#9ca3af' }}
           onPress={() => Linking.openURL('https://readrr.app/terms')}
         >
-          Terms of Service
+          Terms
         </Text>
         <Text
-          style={{ fontSize: 13, color: '#38B6FF', fontWeight: '500' }}
+          style={{ fontSize: 13, color: '#9ca3af' }}
           onPress={() => Linking.openURL('https://readrr.app/privacy')}
         >
-          Privacy Policy
+          Privacy
+        </Text>
+        <Text
+          style={{ fontSize: 13, color: '#ef4444' }}
+          onPress={handleDeleteAccount}
+        >
+          Delete account
         </Text>
       </View>
 
@@ -420,9 +402,9 @@ export default function ProfileScreen({ navigation }: Props) {
       {__DEV__ && (
         <TouchableOpacity
           onPress={handleDevReset}
-          className="mt-4 bg-orange-500 py-4 rounded-xl"
+          className="mt-6 bg-orange-500 py-3 rounded-xl"
         >
-          <Text className="text-white text-center font-semibold text-lg">
+          <Text className="text-white text-center font-semibold">
             DEV: Reset & Test Onboarding
           </Text>
         </TouchableOpacity>
@@ -433,11 +415,8 @@ export default function ProfileScreen({ navigation }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+      <View className="px-4 py-3">
         <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Profile</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
-          <Text className="text-primary">Edit</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
