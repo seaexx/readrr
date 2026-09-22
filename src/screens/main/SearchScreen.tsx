@@ -104,8 +104,13 @@ export default function SearchScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      {/* Header */}
+      <View className="px-4 pt-2 pb-1">
+        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Search</Text>
+      </View>
+
       {/* Search bar */}
-      <View className="px-4 pt-4 pb-2">
+      <View className="px-4 pt-1 pb-2">
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2.5">
           <MagnifyingGlass size={16} color="#9ca3af" weight="regular" style={{ marginRight: 8 }} />
           <TextInput

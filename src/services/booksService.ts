@@ -145,16 +145,19 @@ export async function fetchBookByISBN(rawIsbn: string): Promise<BookInfo> {
 
   try {
     return await fetchBookFromOpenLibrary(isbn);
-  } catch (olError) {
-    console.error('Open Library lookup failed:', olError);
+  } catch (olError: any) {
+    // Aborts (the 8s timeout) and plain misses are expected here — fall back
+    // quietly. console.error would trip the dev LogBox red popup for a
+    // non-error, so log at a lower level.
+    console.log('Open Library lookup failed, trying fallback:', olError?.message || olError);
 
     const apiKey = process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY;
     if (!apiKey) throw new Error('Book not found. Check the ISBN and try again.');
 
     try {
       return await fetchBookFromGoogleBooks(isbn, apiKey);
-    } catch (gbError) {
-      console.error('Google Books lookup failed:', gbError);
+    } catch (gbError: any) {
+      console.log('Google Books lookup failed:', gbError?.message || gbError);
       throw new Error('Book not found. Check the ISBN and try again.');
     }
   }

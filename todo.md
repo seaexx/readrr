@@ -51,7 +51,7 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       repeatedly.* (`deletePost` in `postsService.ts`, `ProfileScreen` delete flow.) (chip)
 - [ ] **Follows: wire into UI or remove.** *`followsService` + 2 RPCs exist, used in zero
       screens — a "social" app with no social graph in the UI.* (chip)
-- [ ] **Book-lookup AbortError leaks to the UI (device QA 2026-09-22).** Tapping a book whose Open
+- [x] **Book-lookup AbortError leaks to the UI (device QA 2026-09-22).** FIXED — booksService logs the timeout/miss at a lower level (no dev LogBox popup); fallback + silent caller handling unchanged. Tapping a book whose Open
       Library lookup exceeds the 8s timeout throws `Open Library lookup failed: [AbortError: Aborted]`
       and surfaces an error. Aborted/timed-out lookups should fail quietly and fall back to the
       stored post data — never alert. (`booksService.fetchWithTimeout`; caller on the book-open path.)
@@ -88,8 +88,8 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       comments section layout needs fixing — doesn't look right. (`PostDetailScreen`.)
 - [ ] **Swap book detail cover.** Swaps tab → tap a swap post: the cover is stretched to fill the
       whole area and looks bad — constrain aspect ratio / sizing. (`BookDetailScreen`.)
-- [ ] **Uniform screen headers.** Add "Search" and "Profile" titles at the top of those screens so
-      every page matches Inbox/Notifications. (`SearchScreen`, `ProfileScreen`.)
+- [x] **Uniform screen headers.** DONE — added serif "Search" and "Profile" titles matching
+      Inbox/Notifications. (`SearchScreen`, `ProfileScreen`.) The Profile redesign (#2) will refine it.
 
 ---
 
