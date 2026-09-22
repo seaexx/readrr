@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,7 @@ import ReportModal from '../../components/ReportModal';
 import { blockUser, getBlockedUserIds } from '../../services/blockService';
 import { reportPost } from '../../services/reportService';
 import { getWantToReadTitles, normalizeTitle } from '../../services/shelfService';
-import { Heart, ChatCircle, Bell, MapPin, DotsThree, Books, ArrowsClockwise, WarningCircle, Bookmark } from 'phosphor-react-native';
+import { Heart, ChatCircle, Bell, MapPin, DotsThree, Books, ArrowsClockwise, WarningCircle, Bookmark, ArrowUp } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
@@ -71,6 +71,14 @@ export default function FeedScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
+  const [newAvailable, setNewAvailable] = useState(false);
+
+  // Per-tab cache so switching tabs is instant (no empty-state flash); a
+  // background refresh then reveals newer content via the "new posts" pill.
+  const cacheRef = useRef<Record<TabType, PostWithEngagement[]>>({ feed: [], swaps: [] });
+  const pendingRef = useRef<PostWithEngagement[] | null>(null);
+  const activeTabRef = useRef<TabType>(activeTab);
+  activeTabRef.current = activeTab;
 
   useFocusEffect(
     useCallback(() => {
@@ -126,30 +134,66 @@ export default function FeedScreen({ navigation }: Props) {
     }, [activeTab, session?.user.id])
   );
 
+  const enrichPosts = async (data: Post[]): Promise<PostWithEngagement[]> =>
+    Promise.all(
+      (data || []).map(async (post) => {
+        const [likeCount, commentCount, hasLiked] = await Promise.all([
+          getLikeCount(post.id),
+          getCommentCount(post.id),
+          checkIfLiked(post.id),
+        ]);
+        return { ...post, likeCount, commentCount, hasLiked };
+      })
+    );
+
+  const fetchTab = async (
+    tab: TabType,
+    blocked: string[],
+    loc: { latitude: number; longitude: number } | null
+  ): Promise<PostWithEngagement[]> => {
+    const data =
+      tab === 'feed'
+        ? await getSocialPosts(20, 0, blocked)
+        : await getSwapPosts(20, 0, blocked, loc);
+    return enrichPosts(data);
+  };
+
   const loadPostsWithBlocked = async (
     blocked: string[],
     loc: { latitude: number; longitude: number } | null = userLocation
   ) => {
-    setLoading(true);
+    const tab = activeTab;
     setError(null);
+
+    const cached = cacheRef.current[tab];
+    if (cached && cached.length > 0) {
+      // Show the cache instantly, then refresh in the background.
+      setPosts(cached);
+      setLoading(false);
+      try {
+        const fresh = await fetchTab(tab, blocked, loc);
+        cacheRef.current[tab] = fresh;
+        if (activeTabRef.current !== tab) return; // switched away mid-fetch
+        const isNew = fresh.length > 0 && fresh[0]?.id !== cached[0]?.id;
+        if (isNew) {
+          // Newer content on top — don't yank the list; offer a pill instead.
+          pendingRef.current = fresh;
+          setNewAvailable(true);
+        } else {
+          setPosts(fresh);
+        }
+      } catch {
+        // Keep showing the cache on a background failure.
+      }
+      return;
+    }
+
+    // First load for this tab — show the spinner.
+    setLoading(true);
     try {
-      const data =
-        activeTab === 'feed'
-          ? await getSocialPosts(20, 0, blocked)
-          : await getSwapPosts(20, 0, blocked, loc);
-
-      const postsWithCounts = await Promise.all(
-        (data || []).map(async (post) => {
-          const [likeCount, commentCount, hasLiked] = await Promise.all([
-            getLikeCount(post.id),
-            getCommentCount(post.id),
-            checkIfLiked(post.id),
-          ]);
-          return { ...post, likeCount, commentCount, hasLiked };
-        })
-      );
-
-      setPosts(postsWithCounts);
+      const fresh = await fetchTab(tab, blocked, loc);
+      cacheRef.current[tab] = fresh;
+      if (activeTabRef.current === tab) setPosts(fresh);
     } catch (error: any) {
       console.error('Error loading posts:', error);
       setError(error?.message || 'Failed to load posts. Check your connection and try again.');
@@ -186,23 +230,16 @@ export default function FeedScreen({ navigation }: Props) {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    const tab = activeTab;
     try {
-      const loc = activeTab === 'swaps' ? userLocation : null;
-      const data =
-        activeTab === 'feed' ? await getSocialPosts(20, 0, blockedIds) : await getSwapPosts(20, 0, blockedIds, loc);
-
-      const postsWithCounts = await Promise.all(
-        (data || []).map(async (post) => {
-          const [likeCount, commentCount, hasLiked] = await Promise.all([
-            getLikeCount(post.id),
-            getCommentCount(post.id),
-            checkIfLiked(post.id),
-          ]);
-          return { ...post, likeCount, commentCount, hasLiked };
-        })
-      );
-
-      setPosts(postsWithCounts);
+      const loc = tab === 'swaps' ? userLocation : null;
+      const fresh = await fetchTab(tab, blockedIds, loc);
+      cacheRef.current[tab] = fresh;
+      if (activeTabRef.current === tab) {
+        setPosts(fresh);
+        pendingRef.current = null;
+        setNewAvailable(false);
+      }
       setError(null);
     } catch (error: any) {
       console.error('Error refreshing:', error);
@@ -258,7 +295,11 @@ export default function FeedScreen({ navigation }: Props) {
         })
       );
 
-      setPosts((prev) => [...prev, ...postsWithCounts]);
+      setPosts((prev) => {
+        const next = [...prev, ...postsWithCounts];
+        cacheRef.current[activeTab] = next;
+        return next;
+      });
     } catch (error) {
       console.error('Error loading more:', error);
     } finally {
@@ -292,10 +333,29 @@ export default function FeedScreen({ navigation }: Props) {
     Alert.alert('Report Submitted', 'Thank you. We will review this report.');
   };
 
+  const handleShowNew = () => {
+    if (pendingRef.current) {
+      cacheRef.current[activeTab] = pendingRef.current;
+      setPosts(pendingRef.current);
+      pendingRef.current = null;
+    }
+    setNewAvailable(false);
+  };
+
   const handleTabChange = (tab: TabType) => {
-    if (tab !== activeTab) {
-      setActiveTab(tab);
+    if (tab === activeTab) return;
+    setNewAvailable(false);
+    pendingRef.current = null;
+    setActiveTab(tab);
+    // Show the cached list for the new tab instantly (no empty flash); the
+    // focus effect then refreshes it in the background.
+    const cached = cacheRef.current[tab];
+    if (cached && cached.length > 0) {
+      setPosts(cached);
+      setLoading(false);
+    } else {
       setPosts([]);
+      setLoading(true);
     }
   };
 
@@ -705,6 +765,35 @@ export default function FeedScreen({ navigation }: Props) {
                 Location off — showing all swaps. Enable location in Settings for nearby results.
               </Text>
             </View>
+          )}
+          {newAvailable && (
+            <TouchableOpacity
+              onPress={handleShowNew}
+              activeOpacity={0.85}
+              style={{ alignSelf: 'center', marginTop: 8, marginBottom: 2 }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: '#38B6FF',
+                  paddingHorizontal: 14,
+                  paddingVertical: 7,
+                  borderRadius: 20,
+                  shadowColor: '#1e293b',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+              >
+                <ArrowUp size={14} color="#fff" weight="bold" />
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
+                  New {activeTab === 'feed' ? 'posts' : 'swaps'} · pull to refresh
+                </Text>
+              </View>
+            </TouchableOpacity>
           )}
           <FlatList
           key={activeTab}

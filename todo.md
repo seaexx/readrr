@@ -83,10 +83,10 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       `recordAudioAndroid: false` on expo-camera (barcode doesn't need the mic; Play asks about it).
 
 #### UI/UX polish — device QA (2026-09-22)
-- [ ] **Tab switch flashes an empty state.** Switching Feed/Swaps clears the list, so it shows
-      "No posts/swaps available" for a beat before it reloads. Cache each tab's last results (show
-      them instantly), refresh in the background, and show a subtle "pull to refresh" hint (an
-      arrow) when newer content exists. (`FeedScreen.handleTabChange` currently does `setPosts([])`.)
+- [x] **Tab switch flashes an empty state.** DONE — per-tab cache (`cacheRef`) shows each tab
+      instantly (spinner only on the first load); a background refresh reveals newer top content via
+      a tappable "New posts · pull to refresh" pill (`handleShowNew`) instead of yanking the list.
+      (`FeedScreen`.)
 - [x] **Profile page redesign.** DONE — removed the skeuomorphic wooden shelves + cramped 3-col
       grid for a clean centered hero (avatar, @username, city, bio), a single 3-stat row
       (Swaps / Rating / Books), serif content tabs, a Feed-style 2-column hero-cover grid, and a
