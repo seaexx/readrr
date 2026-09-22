@@ -179,6 +179,7 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: '#38B6FF',
         tabBarInactiveTintColor: '#9ca3af',
         tabBarStyle: {
