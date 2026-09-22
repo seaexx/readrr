@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Books, WarningCircle } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import { getUserPosts, deletePost, updatePostAvailability } from '../../services/postsService';
+import { getPostSwapImpact } from '../../services/swapsService';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
@@ -274,26 +275,55 @@ export default function ProfileScreen({ navigation }: Props) {
     options.push({
       text: 'Delete Post',
       style: 'destructive',
-      onPress: () => {
-        Alert.alert(
-          'Delete Post',
-          `Permanently delete "${item.title}"?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deletePost(item.id);
-                  loadPosts();
-                } catch {
-                  Alert.alert('Error', 'Could not delete post.');
-                }
+      onPress: async () => {
+        const doDelete = async () => {
+          try {
+            await deletePost(item.id);
+            loadPosts();
+          } catch {
+            Alert.alert('Error', 'Could not delete post.');
+          }
+        };
+
+        // A swap listing may have swap requests + chat that a hard delete wipes
+        // for both people. Check first and warn, offering to hide instead.
+        let impact = { swapCount: 0, hasChat: false };
+        if (isSwap) {
+          try {
+            impact = await getPostSwapImpact(item.id);
+          } catch {}
+        }
+
+        if (impact.swapCount > 0) {
+          Alert.alert(
+            'Delete this listing?',
+            `"${item.title}" has ${impact.swapCount} swap request${impact.swapCount > 1 ? 's' : ''}${
+              impact.hasChat ? ' with chat history' : ''
+            }. Deleting removes ${
+              impact.hasChat ? 'the conversation for both of you' : 'those requests'
+            } permanently. Hiding it keeps everything but takes it off the market.`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Hide instead',
+                onPress: async () => {
+                  try {
+                    await updatePostAvailability(item.id, 'swapped');
+                    loadPosts();
+                  } catch {
+                    Alert.alert('Error', 'Could not update listing.');
+                  }
+                },
               },
-            },
-          ]
-        );
+              { text: 'Delete anyway', style: 'destructive', onPress: doDelete },
+            ]
+          );
+        } else {
+          Alert.alert('Delete Post', `Permanently delete "${item.title}"?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: doDelete },
+          ]);
+        }
       },
     });
 

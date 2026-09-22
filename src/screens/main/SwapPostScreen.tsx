@@ -131,6 +131,11 @@ export default function SwapPostScreen({ navigation }: Props) {
       navigation.navigate('MainTabs', { screen: 'Swaps' });
       setHasPosted(true);
     } catch (error: any) {
+      // 23505 = unique violation from the one-active-listing-per-book index (019)
+      if (error?.code === '23505') {
+        Alert.alert('Already listed', `You already have "${book.title}" up for swap — hide or delete that listing first.`);
+        return;
+      }
       const msg = error.message || 'Failed to create post';
       const isUploadError =
         msg.toLowerCase().includes('upload') ||

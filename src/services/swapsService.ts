@@ -328,3 +328,29 @@ export async function getUnreadCount(swapId: string, userId: string): Promise<nu
 
   return data || 0;
 }
+
+// How many swaps hang off a post, and whether any have chat history. Used to
+// warn before deleting a swap listing — a hard delete cascades the swaps AND
+// their messages, wiping the conversation for both people.
+export async function getPostSwapImpact(
+  postId: string
+): Promise<{ swapCount: number; hasChat: boolean }> {
+  const { count: swapCount } = await supabase
+    .from('swaps')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', postId);
+
+  if (!swapCount) return { swapCount: 0, hasChat: false };
+
+  const { data: swaps } = await supabase.from('swaps').select('id').eq('post_id', postId);
+  const swapIds = (swaps || []).map((s) => s.id);
+  let hasChat = false;
+  if (swapIds.length > 0) {
+    const { count: msgCount } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .in('swap_id', swapIds);
+    hasChat = (msgCount || 0) > 0;
+  }
+  return { swapCount, hasChat };
+}

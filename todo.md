@@ -46,9 +46,10 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [ ] **Test push + barcode scan on a REAL device.** *Simulator can't do either; both are core.*
 
 ### P1 — correctness / safety before real users
-- [ ] **Safe swap-post delete + duplicate-post prevention.** *Deleting a swap post silently
-      cascades away its swaps + entire chat history; and the same book can be listed
-      repeatedly.* (`deletePost` in `postsService.ts`, `ProfileScreen` delete flow.) (chip)
+- [x] **Safe swap-post delete + duplicate-post prevention.** DONE — deleting a swap listing that
+      has requests/chat now warns and offers "Hide instead" (`getPostSwapImpact` + ProfileScreen
+      delete flow); duplicate active listings are blocked by a partial unique index (migration 019,
+      applied to live DB) with a friendly "Already listed" message in SwapPostScreen.
 - [ ] **Follows: wire into UI or remove.** *`followsService` + 2 RPCs exist, used in zero
       screens — a "social" app with no social graph in the UI.* (chip)
 - [x] **Book-lookup AbortError leaks to the UI (device QA 2026-09-22).** FIXED — booksService logs the timeout/miss at a lower level (no dev LogBox popup); fallback + silent caller handling unchanged. Tapping a book whose Open
