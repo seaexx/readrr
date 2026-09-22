@@ -50,8 +50,9 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       has requests/chat now warns and offers "Hide instead" (`getPostSwapImpact` + ProfileScreen
       delete flow); duplicate active listings are blocked by a partial unique index (migration 019,
       applied to live DB) with a friendly "Already listed" message in SwapPostScreen.
-- [ ] **Follows: wire into UI or remove.** *`followsService` + 2 RPCs exist, used in zero
-      screens — a "social" app with no social graph in the UI.* (chip)
+- [x] **Follows: removed for now (launch lean).** Deleted the unused `followsService` (dead client
+      code, zero UI). The DB `follows` table + RPCs (migration 007) are left in place, so re-adding
+      social later is just UI wiring — no migration to recreate. (Deferred: social stickiness.)
 - [x] **Book-lookup AbortError leaks to the UI (device QA 2026-09-22).** FIXED — booksService logs the timeout/miss at a lower level (no dev LogBox popup); fallback + silent caller handling unchanged. Tapping a book whose Open
       Library lookup exceeds the 8s timeout throws `Open Library lookup failed: [AbortError: Aborted]`
       and surfaces an error. Aborted/timed-out lookups should fail quietly and fall back to the
