@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -271,6 +272,22 @@ export default function FeedScreen({ navigation }: Props) {
     } catch {
       setLocationDenied(true);
       setLocationPromptNeeded(false);
+    }
+  };
+
+  // Re-enable path from the amber "Location off" banner: if the OS can still be
+  // asked (e.g. after tapping "Not now"), prompt in-app; if it was hard-denied,
+  // deep-link to device Settings where the user must flip it on.
+  const handleEnableFromBanner = async () => {
+    try {
+      const perm = await Location.getForegroundPermissionsAsync();
+      if (perm.canAskAgain || perm.status === 'undetermined') {
+        handleEnableLocation();
+      } else {
+        Linking.openSettings();
+      }
+    } catch {
+      handleEnableLocation();
     }
   };
 
@@ -760,10 +777,13 @@ export default function FeedScreen({ navigation }: Props) {
             </View>
           )}
           {activeTab === 'swaps' && locationDenied && (
-            <View className="px-4 py-2 bg-amber-50 flex-row items-center justify-center">
+            <View className="px-4 py-2 bg-amber-50 flex-row items-center justify-center" style={{ gap: 6, flexWrap: 'wrap' }}>
               <Text style={{ fontSize: 12, color: '#92400e', textAlign: 'center' }}>
-                Location off — showing all swaps. Enable location in Settings for nearby results.
+                Location off — showing all swaps.
               </Text>
+              <TouchableOpacity onPress={handleEnableFromBanner} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={{ fontSize: 12, color: '#1d4ed8', fontWeight: '700' }}>Enable location</Text>
+              </TouchableOpacity>
             </View>
           )}
           {newAvailable && (
