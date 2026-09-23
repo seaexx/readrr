@@ -117,6 +117,18 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 
 ---
 
+## 🔒 Secrets — how keys are handled (do not regress)
+All API keys live in **`.env.local`** (local dev, gitignored) and **EAS environment variables**
+(builds) — **never in the repo**. `eas.json` has no keys, and `.githooks/pre-commit` blocks any
+commit whose staged changes look like a key (enabled via `git config core.hooksPath .githooks`;
+re-run that once on a fresh clone).
+- ✅ Leaked keys scrubbed from **all git history** (`git filter-repo`) and force-pushed to origin.
+- ✅ `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` set as EAS env vars (all environments).
+- [ ] **Rotate the Google Books key** (it was exposed on GitHub). In Google Cloud: regenerate it,
+      restrict it (Books API only + daily quota), delete the old one. Then register the new key:
+      `eas env:create --name EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY --value <NEW_KEY> --environment production --environment preview --environment development --visibility sensitive --force`
+      and update your local `.env.local`. Book lookup (Google-only) needs this in the build.
+
 ## Database — Supabase CLI (linked ✅)
 Linked and migrated. **Ongoing workflow:** Claude writes `supabase/migrations/0NN_*.sql`, then
 `supabase db push` applies it to the live DB — no more hand-applying. Re-run
