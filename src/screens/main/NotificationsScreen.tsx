@@ -95,8 +95,10 @@ export default function NotificationsScreen({ navigation }: Props) {
         navigation.navigate(data.screen, data.params);
         return;
       }
-      const { type, swapId, postId } = data;
-      if (type === 'like' && postId) {
+      const { type, swapId, postId, postType } = data;
+      if ((type === 'comment' || type === 'shelf_add') && postId) {
+        navigation.navigate(postType === 'swap' ? 'BookDetail' : 'PostDetail', { postId });
+      } else if (type === 'like' && postId) {
         navigation.navigate('PostDetail', { postId });
       } else if (type === 'wishlist_match' && postId) {
         navigation.navigate('BookDetail', { postId });

@@ -277,11 +277,13 @@ function NotificationHandler() {
   useEffect(() => {
     const handleData = (data: any) => {
       if (!data) return;
-      const { type, swapId, postId } = data;
+      const { type, swapId, postId, postType } = data;
       // Small delay so the navigator is mounted
       setTimeout(() => {
         try {
-          if (type === 'like' && postId) {
+          if ((type === 'comment' || type === 'shelf_add') && postId) {
+            navigation.navigate(postType === 'swap' ? 'BookDetail' : 'PostDetail', { postId });
+          } else if (type === 'like' && postId) {
             navigation.navigate('PostDetail', { postId });
           } else if (type === 'wishlist_match' && postId) {
             navigation.navigate('BookDetail', { postId });

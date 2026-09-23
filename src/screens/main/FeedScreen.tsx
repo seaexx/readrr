@@ -384,6 +384,15 @@ export default function FeedScreen({ navigation }: Props) {
     }
   };
 
+  const handleUserPress = (post: PostWithEngagement) => {
+    if (!post.user?.id) return;
+    if (post.user.id === session?.user.id) {
+      navigation.navigate('Profile');
+    } else {
+      navigation.navigate('OtherUserProfile', { userId: post.user.id });
+    }
+  };
+
   const handleLike = async (post: PostWithEngagement) => {
     if (!session) return;
 
@@ -438,14 +447,20 @@ export default function FeedScreen({ navigation }: Props) {
       <View style={{ width: CARD_WIDTH }} className="mb-5">
         {/* User Info on Top */}
         <View className="flex-row items-center mb-2">
-          <Avatar
-            avatarUrl={post.user?.avatar_url}
-            username={post.user?.username || 'User'}
-            size={30}
-          />
-          <Text style={{ fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1 }} numberOfLines={1}>
-            @{post.user?.username}
-          </Text>
+          <TouchableOpacity
+            onPress={() => handleUserPress(post)}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+          >
+            <Avatar
+              avatarUrl={post.user?.avatar_url}
+              username={post.user?.username || 'User'}
+              size={30}
+            />
+            <Text style={{ fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1 }} numberOfLines={1}>
+              @{post.user?.username}
+            </Text>
+          </TouchableOpacity>
           {post.user?.id !== session?.user.id && (
             <TouchableOpacity
               onPress={() => {

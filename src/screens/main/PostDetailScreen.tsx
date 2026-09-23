@@ -412,7 +412,7 @@ export default function PostDetailScreen({ navigation }: Props) {
                       title: post.title,
                       author: post.author,
                       cover_image_url: post.cover_image_url,
-                    }, () => setSaved(true))
+                    }, () => setSaved(true), { postId: post.id, alreadySaved: saved })
                   }
                   className="flex-row items-center"
                   style={{ marginLeft: 'auto' }}

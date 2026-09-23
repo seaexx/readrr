@@ -357,7 +357,7 @@ export default function BookDetailScreen({ navigation }: Props) {
                   title: post.title,
                   author: post.author,
                   cover_image_url: post.cover_image_url,
-                }, () => setSaved(true))
+                }, () => setSaved(true), { postId: post.id, alreadySaved: saved })
               }
               className={`py-4 rounded-xl mt-3 ${saved ? 'bg-green-50 border border-green-200' : 'border border-primary'}`}
             >

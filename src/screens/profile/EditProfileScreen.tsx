@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { fonts } from '../../theme/fonts';
 import {
   View,
@@ -10,15 +10,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../config/supabase';
-import { Camera } from 'phosphor-react-native';
+import { Camera, Check } from 'phosphor-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { uploadAvatar } from '../../services/storageService';
 import Avatar from '../../components/Avatar';
+import CityAutocomplete from '../../components/CityAutocomplete';
+import { CityResult, cityDisplayName } from '../../services/placesService';
+import { sanitizeUsername, getUsernameError } from '../../utils/validation';
 
 interface Props {
   navigation: any;
@@ -28,9 +32,62 @@ export default function EditProfileScreen({ navigation }: Props) {
   const { profile, setProfile } = useAuthStore();
 
   const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatar_url || null);
+  const [username, setUsername] = useState(profile?.username || '');
+  const [usernameError, setUsernameError] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(true);
   const [city, setCity] = useState(profile?.city || '');
+  // Coordinates of the picked suggestion; cleared if the city text is edited by hand.
+  const [cityCoords, setCityCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [bio, setBio] = useState(profile?.bio || '');
   const [loading, setLoading] = useState(false);
+
+  const usernameChanged = !!profile && username !== profile.username;
+
+  // Debounced availability check (only when the username actually changed)
+  useEffect(() => {
+    if (!usernameChanged || getUsernameError(username)) {
+      setCheckingUsername(false);
+      setUsernameAvailable(!usernameChanged);
+      return;
+    }
+    setCheckingUsername(true);
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .maybeSingle();
+      if (cancelled) return;
+      setCheckingUsername(false);
+      if (error) return; // the unique constraint still guards the save
+      setUsernameAvailable(!data);
+      setUsernameError(data ? 'Username already taken' : '');
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [username, usernameChanged]);
+
+  const handleUsernameChange = (text: string) => {
+    const cleaned = sanitizeUsername(text);
+    setUsername(cleaned);
+    setUsernameError(getUsernameError(cleaned) || '');
+  };
+
+  const handleCityText = (text: string) => {
+    setCity(text);
+    setCityCoords(null);
+  };
+
+  const handleCityPick = (c: CityResult) => {
+    setCity(cityDisplayName(c));
+    setCityCoords({ latitude: c.latitude, longitude: c.longitude });
+  };
+
+  const canSave = !loading && !checkingUsername && !usernameError && usernameAvailable && username.length > 0;
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -52,7 +109,7 @@ export default function EditProfileScreen({ navigation }: Props) {
   };
 
   const handleSave = async () => {
-    if (!profile) return;
+    if (!profile || !canSave) return;
 
     setLoading(true);
 
@@ -64,14 +121,21 @@ export default function EditProfileScreen({ navigation }: Props) {
         avatarUrl = await uploadAvatar(avatarUri, profile.id);
       }
 
-      // Update profile
+      const updates: Record<string, any> = {
+        avatar_url: avatarUrl,
+        city: city.trim() || null,
+        bio: bio.trim() || null,
+      };
+      if (usernameChanged) updates.username = username;
+      // A picked city gives rough coordinates for nearby swaps + wishlist alerts.
+      // Don't overwrite a precise GPS location the Feed already saved.
+      if (cityCoords && !profile.location) {
+        updates.location = `POINT(${cityCoords.longitude} ${cityCoords.latitude})`;
+      }
+
       const { data, error } = await supabase
         .from('users')
-        .update({
-          avatar_url: avatarUrl,
-          city: city.trim() || null,
-          bio: bio.trim() || null,
-        })
+        .update(updates)
         .eq('id', profile.id)
         .select()
         .single();
@@ -82,7 +146,14 @@ export default function EditProfileScreen({ navigation }: Props) {
       Alert.alert('Success', 'Profile updated successfully');
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update profile');
+      if (error?.code === '23505') {
+        // Unique violation — someone grabbed the username since we checked
+        setUsernameAvailable(false);
+        setUsernameError('Username already taken');
+        Alert.alert('Username taken', 'Someone just took that username. Please pick another.');
+      } else {
+        Alert.alert('Error', error.message || 'Failed to update profile');
+      }
     } finally {
       setLoading(false);
     }
@@ -105,8 +176,8 @@ export default function EditProfileScreen({ navigation }: Props) {
               <Text className="text-primary text-base">Cancel</Text>
             </TouchableOpacity>
             <Text className="text-lg" style={{ fontFamily: fonts.serifSemiBold }}>Edit Profile</Text>
-            <TouchableOpacity onPress={handleSave} disabled={loading}>
-              <Text className={`text-base font-semibold ${loading ? 'text-gray-400' : 'text-primary'}`}>
+            <TouchableOpacity onPress={handleSave} disabled={!canSave}>
+              <Text className={`text-base font-semibold ${!canSave ? 'text-gray-400' : 'text-primary'}`}>
                 {loading ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -128,11 +199,27 @@ export default function EditProfileScreen({ navigation }: Props) {
               </View>
             </TouchableOpacity>
 
-            {/* Username (read-only) */}
+            {/* Username */}
             <Text className="text-sm text-gray-500 mb-2">Username</Text>
-            <View className="bg-gray-100 rounded-xl px-4 py-4 mb-4">
-              <Text className="text-gray-600">@{profile.username}</Text>
+            <View style={styles.usernameRow}>
+              <Text style={{ fontSize: 16, color: '#9ca3af' }}>@</Text>
+              <TextInput
+                value={username}
+                onChangeText={handleUsernameChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={20}
+                style={{ flex: 1, fontSize: 16, marginLeft: 2 }}
+              />
+              {checkingUsername ? (
+                <ActivityIndicator size="small" color="#38B6FF" />
+              ) : usernameChanged && usernameAvailable && !usernameError ? (
+                <Check size={18} color="#16a34a" weight="bold" />
+              ) : null}
             </View>
+            <Text style={{ fontSize: 12, color: usernameError ? '#ef4444' : '#9ca3af', marginBottom: 16, marginTop: 6 }}>
+              {usernameError || 'Lowercase letters, numbers and underscores, 3–20 characters.'}
+            </Text>
 
             {/* Email (read-only) */}
             <Text className="text-sm text-gray-500 mb-2">Email</Text>
@@ -142,13 +229,7 @@ export default function EditProfileScreen({ navigation }: Props) {
 
             {/* City */}
             <Text className="text-sm text-gray-500 mb-2">City</Text>
-            <TextInput
-              placeholder="Where are you located?"
-              value={city}
-              onChangeText={setCity}
-              maxLength={100}
-              style={styles.textInput}
-            />
+            <CityAutocomplete value={city} onChangeText={handleCityText} onSelect={handleCityPick} />
 
             {/* Bio */}
             <Text className="text-sm text-gray-500 mb-2">Bio</Text>
@@ -181,6 +262,15 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     fontSize: 16,
     marginBottom: 16,
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   textArea: {
     minHeight: 100,

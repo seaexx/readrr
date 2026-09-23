@@ -92,13 +92,17 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [x] **Book covers are low-res/blurry.** We use Google's `zoom=1` thumbnail → request the high-res
       image, and upgrade already-stored cover URLs at render time.
 
-**Batch B — features**
-- [ ] Tap a username/avatar in the Feed → that user's profile.
-- [ ] Redesign the other-user profile screen (match the new Profile design).
-- [ ] Username editable in Edit Profile (format + uniqueness check).
-- [ ] City autocomplete in Edit Profile — worldwide, type-ahead via Photon (free OpenStreetMap
-      geocoder, no key); store the city name + coordinates.
-- [ ] Notifications for **comments** and **someone shelving your book** (likes already notify).
+**Batch B — features** ✅ shipped via OTA
+- [x] Tap a username/avatar in the Feed → that user's profile (own → Profile tab).
+- [x] Other-user profile redesigned to match Profile (hero, stats incl. Books, Posts/Listed tabs,
+      shared `BookGrid` cover grid, cached per user, blocked state).
+- [x] Username editable in Edit Profile — format check, debounced availability check, and a
+      friendly message if the unique constraint catches a race.
+- [x] City autocomplete (`CityAutocomplete` + `placesService`, Photon/OSM, worldwide, no key).
+      Saves "City, Country"; if the user has no location yet, the city's coordinates are stored as
+      `users.location` so nearby swaps + wishlist alerts work before GPS is granted.
+- [x] Notifications for **comments** and **someone saving your book to a shelf** (first save only);
+      tapping opens the post (BookDetail for swaps). Shared helper `notifyPostOwner`.
 
 **Batch C — performance / feel**
 - [ ] App-wide data cache so screens don't reload every visit (also fixes the Profile "0" flash).

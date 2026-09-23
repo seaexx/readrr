@@ -104,7 +104,39 @@ export async function createComment(
     .single();
 
   if (error) throw error;
+
+  // Notify the post owner (fire-and-forget so posting stays instant)
+  notifyPostOwner(postId, userId, (username, title) => ({
+    title: `@${username} commented on your post`,
+    body: `"${title}": ${content.length > 80 ? content.slice(0, 77) + '…' : content}`,
+    type: 'comment',
+  }));
+
   return data;
+}
+
+// Push + in-app notification to a post's owner about an action by `actorId`.
+// Never throws; skips when the actor owns the post.
+export async function notifyPostOwner(
+  postId: string,
+  actorId: string,
+  build: (actorUsername: string, postTitle: string) => { title: string; body: string; type: string }
+): Promise<void> {
+  try {
+    const [{ data: post }, { data: actor }] = await Promise.all([
+      supabase.from('posts').select('user_id, title, post_type').eq('id', postId).single(),
+      supabase.from('users').select('username').eq('id', actorId).single(),
+    ]);
+    if (!post || !actor || post.user_id === actorId) return;
+    const { title, body, type } = build(actor.username, post.title);
+    await sendPushNotification(post.user_id, title, body, {
+      type,
+      postId,
+      postType: post.post_type,
+    });
+  } catch {
+    // Notification failures never block the action
+  }
 }
 
 export async function getPostComments(postId: string): Promise<Comment[]> {

@@ -8,6 +8,7 @@ interface UserProfile {
   avatar_url: string | null;
   city: string | null;
   bio: string | null;
+  location?: unknown; // PostGIS geography (opaque on the client)
   avg_rating: number;
   total_swaps: number;
   created_at: string;

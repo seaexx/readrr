@@ -1,31 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
-import { DotsThree } from 'phosphor-react-native';
+import { CaretLeft, DotsThree, Books, WarningCircle, Prohibit } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import { useAuthStore } from '../../store/authStore';
 import { getUserPosts } from '../../services/postsService';
 import { User } from '../../models/User';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
-import PostCard from '../../components/PostCard';
+import BookGrid from '../../components/BookGrid';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ReportModal from '../../components/ReportModal';
 import { blockUser, unblockUser, isBlocked } from '../../services/blockService';
-import { WarningCircle } from 'phosphor-react-native';
 import { reportUser } from '../../services/reportService';
+import { getCached, setCached } from '../../utils/memoryCache';
 
 interface Props {
   navigation: any;
+}
+
+interface CachedProfile {
+  user: User;
+  posts: Post[];
+  blocked: boolean;
 }
 
 export default function OtherUserProfileScreen({ navigation }: Props) {
@@ -33,12 +40,16 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   const { userId } = route.params as { userId: string };
   const session = useAuthStore((state) => state.session);
 
-  const [user, setUser] = useState<User | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Seed from the in-memory cache so reopening a profile renders instantly.
+  const cacheKey = `otherProfile:${userId}`;
+  const cached = getCached<CachedProfile>(cacheKey);
+  const [user, setUser] = useState<User | null>(cached?.user ?? null);
+  const [posts, setPosts] = useState<Post[]>(cached?.posts ?? []);
+  const [blocked, setBlocked] = useState(cached?.blocked ?? false);
+  const [loading, setLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
-  const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'posts' | 'swaps'>('posts');
   const [showReportModal, setShowReportModal] = useState(false);
 
   useFocusEffect(
@@ -56,15 +67,18 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
         .single();
 
       if (userError) throw userError;
-      setUser(userData);
 
       // Mutual blocks hide this user's posts
       let blockStatus = false;
       if (session?.user.id) {
         blockStatus = await isBlocked(session.user.id, userId);
       }
+      const userPosts = blockStatus ? [] : await getUserPosts(userId, 60);
+
+      setUser(userData);
       setBlocked(blockStatus);
-      setPosts(blockStatus ? [] : await getUserPosts(userId));
+      setPosts(userPosts);
+      setCached<CachedProfile>(cacheKey, { user: userData, posts: userPosts, blocked: blockStatus });
       setError(null);
     } catch (err: any) {
       console.error('Error loading profile:', err);
@@ -81,22 +95,11 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   };
 
   const handleMenuPress = () => {
-    const options = [
-      blocked ? 'Unblock User' : 'Block User',
-      'Report User',
-      'Cancel',
-    ];
     Alert.alert(undefined as any, undefined as any, [
       {
-        text: options[0],
+        text: blocked ? 'Unblock User' : 'Block User',
         style: 'destructive',
-        onPress: () => {
-          if (blocked) {
-            handleUnblock();
-          } else {
-            handleBlock();
-          }
-        },
+        onPress: () => (blocked ? handleUnblock() : handleBlock()),
       },
       { text: 'Report User', onPress: () => setShowReportModal(true) },
       { text: 'Cancel', style: 'cancel' },
@@ -147,88 +150,154 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     Alert.alert('Report Submitted', 'Thank you. We will review this report.');
   };
 
-  if (loading || !user) {
-    if (error) {
+  const handlePostPress = (item: Post) => {
+    if (item.post_type === 'swap') {
+      navigation.navigate('BookDetail', { postId: item.id });
+    } else {
+      navigation.navigate('PostDetail', { postId: item.id });
+    }
+  };
+
+  const topBar = (
+    <View className="flex-row items-center px-2 py-2">
+      <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} hitSlop={8}>
+        <CaretLeft size={24} color="#1a1a1a" />
+      </TouchableOpacity>
+      <View style={{ flex: 1 }} />
+      {user && (
+        <TouchableOpacity onPress={handleMenuPress} style={{ padding: 8 }} hitSlop={8}>
+          <DotsThree size={24} color="#1a1a1a" weight="bold" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  if (!user) {
+    if (error && !loading) {
       return (
-        <SafeAreaView className="flex-1 bg-white items-center justify-center px-8">
-          <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load profile</Text>
-          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
-          <TouchableOpacity onPress={loadData} className="bg-primary px-6 py-3 rounded-xl">
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
-          </TouchableOpacity>
+        <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+          {topBar}
+          <View className="flex-1 items-center justify-center px-8">
+            <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
+            <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load profile</Text>
+            <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+            <TouchableOpacity onPress={loadData} className="bg-primary px-6 py-3 rounded-xl">
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       );
     }
     return <LoadingSpinner fullScreen />;
   }
 
+  const socialPosts = posts.filter((p) => p.post_type === 'social');
+  const swapPosts = posts.filter((p) => p.post_type === 'swap');
+  const filteredPosts = activeTab === 'posts' ? socialPosts : swapPosts;
+
   const renderHeader = () => (
     <View>
-      {/* Profile Header */}
-      <View className="items-center pt-6 pb-4 px-6">
-        <Avatar avatarUrl={user.avatar_url} username={user.username} size={100} />
-        <Text className="text-2xl mt-4" style={{ fontFamily: fonts.serifSemiBold }}>@{user.username}</Text>
-        {user.city && <Text className="text-gray-500 mt-1">{user.city}</Text>}
-        {user.bio && (
-          <Text className="text-gray-700 text-center mt-3 px-4">{user.bio}</Text>
+      {/* Profile hero */}
+      <View className="items-center px-6 pt-2 pb-5">
+        <Avatar avatarUrl={user.avatar_url} username={user.username} size={96} />
+        <Text style={{ fontSize: 24, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 14 }}>@{user.username}</Text>
+        {user.city && (
+          <Text style={{ fontSize: 14, color: '#9ca3af', marginTop: 4 }}>{user.city}</Text>
         )}
-
+        {user.bio && (
+          <Text style={{ fontSize: 15, color: '#4b5563', textAlign: 'center', marginTop: 12, lineHeight: 21 }}>
+            {user.bio}
+          </Text>
+        )}
       </View>
 
       {/* Stats */}
-      <View className="flex-row justify-around py-4 border-y border-gray-200 mx-6">
-        <View className="items-center">
-          <Text className="text-2xl font-bold">{user.total_swaps}</Text>
-          <Text className="text-gray-500">Swaps</Text>
+      <View
+        className="flex-row mx-6"
+        style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f3f4f6', paddingVertical: 14 }}
+      >
+        <View className="flex-1 items-center">
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{user.total_swaps || 0}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Swaps</Text>
         </View>
-        <View className="items-center">
-          <Text className="text-2xl font-bold">
-            {user.avg_rating?.toFixed(1) || '0.0'}
+        <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
+        <View className="flex-1 items-center">
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{user.avg_rating?.toFixed(1) || '0.0'}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Rating</Text>
+        </View>
+        <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
+        <View className="flex-1 items-center">
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{loading ? '–' : posts.length}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Books</Text>
+        </View>
+      </View>
+
+      {/* Content tabs */}
+      {!blocked && (
+        <View className="flex-row mt-2">
+          {(['posts', 'swaps'] as const).map((tab) => {
+            const active = activeTab === tab;
+            const label = tab === 'posts' ? `Posts (${socialPosts.length})` : `Listed (${swapPosts.length})`;
+            return (
+              <TouchableOpacity
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                className="flex-1 py-3 items-center"
+                style={active ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
+              >
+                <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: active ? '#38B6FF' : '#9ca3af' }}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+
+  const renderBody = () => {
+    if (blocked) {
+      return (
+        <View className="items-center py-12 px-6">
+          <Prohibit size={44} color="#9ca3af" weight="duotone" style={{ marginBottom: 12 }} />
+          <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>
+            You've blocked this reader. Unblock from the ••• menu to see their books.
           </Text>
-          <Text className="text-gray-500">Rating</Text>
         </View>
-      </View>
-
-      {/* Posts Header */}
-      <View className="px-6 pt-4 pb-2">
-        <Text className="font-semibold text-lg">Posts</Text>
-      </View>
-    </View>
-  );
-
-  const renderEmpty = () => (
-    <View className="items-center py-12">
-      <Text className="text-gray-500">No posts yet</Text>
-    </View>
-  );
+      );
+    }
+    if (loading) {
+      return (
+        <View className="items-center py-12">
+          <ActivityIndicator color="#38B6FF" />
+        </View>
+      );
+    }
+    if (filteredPosts.length === 0) {
+      return (
+        <View className="items-center py-12 px-6">
+          <Books size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 17, color: '#6b7280' }}>
+            {activeTab === 'posts' ? 'No posts yet' : 'Nothing listed for swap'}
+          </Text>
+        </View>
+      );
+    }
+    return <BookGrid posts={filteredPosts} onPress={handlePostPress} />;
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text className="text-primary text-base">← Back</Text>
-        </TouchableOpacity>
-        <Text className="flex-1 text-center font-semibold text-lg">
-          @{user.username}
-        </Text>
-        <TouchableOpacity onPress={handleMenuPress} style={{ width: 50, alignItems: 'flex-end' }}>
-          <DotsThree size={22} color="#6b7280" weight="bold" />
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostCard post={item} />}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+      {topBar}
+      <ScrollView
         showsVerticalScrollIndicator={false}
-      />
+        contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
+        {renderHeader()}
+        {renderBody()}
+      </ScrollView>
       <ReportModal
         visible={showReportModal}
         label="User"

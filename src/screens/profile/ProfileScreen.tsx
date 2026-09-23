@@ -6,13 +6,11 @@ import {
   Alert,
   ScrollView,
   RefreshControl,
-  Dimensions,
   Linking,
   ActivityIndicator,
 } from 'react-native';
 import { getCached, setCached } from '../../utils/memoryCache';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -22,12 +20,7 @@ import { getUserPosts, deletePost, updatePostAvailability } from '../../services
 import { getPostSwapImpact } from '../../services/swapsService';
 import { Post } from '../../models/Post';
 import Avatar from '../../components/Avatar';
-import BookCover from '../../components/BookCover';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_GAP = 12;
-const CARD_W = (SCREEN_WIDTH - 32 - GRID_GAP) / 2; // 2 columns, 16px side padding
-const CARD_H = Math.round(CARD_W * 1.5);
+import BookGrid from '../../components/BookGrid';
 
 interface Props {
   navigation: any;
@@ -54,7 +47,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const loadPosts = async () => {
     if (!profile) return;
     try {
-      const data = await getUserPosts(profile.id);
+      const data = await getUserPosts(profile.id, 60);
       setPosts(data);
       setCached(postsCacheKey, data);
       setPostsLoaded(true);
@@ -339,70 +332,16 @@ export default function ProfileScreen({ navigation }: Props) {
     Alert.alert(item.title, 'What would you like to do?', options);
   };
 
-  const renderBooks = () => (
-    <View
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        columnGap: GRID_GAP,
-      }}
-    >
-      {filteredPosts.map((item) => {
-        const handlePress = () => {
-          if (item.post_type === 'swap') {
-            navigation.navigate('BookDetail', { postId: item.id });
-          } else {
-            navigation.navigate('PostDetail', { postId: item.id });
-          }
-        };
-        const unavailable = item.post_type === 'swap' && item.availability !== 'available';
+  const handlePostPress = (item: Post) => {
+    if (item.post_type === 'swap') {
+      navigation.navigate('BookDetail', { postId: item.id });
+    } else {
+      navigation.navigate('PostDetail', { postId: item.id });
+    }
+  };
 
-        return (
-          <TouchableOpacity
-            key={item.id}
-            onPress={handlePress}
-            onLongPress={() => handlePostLongPress(item)}
-            delayLongPress={400}
-            activeOpacity={0.85}
-            style={{ width: CARD_W, marginBottom: 18 }}
-          >
-            <View
-              style={{
-                width: CARD_W,
-                height: CARD_H,
-                borderRadius: 8,
-                backgroundColor: '#fff',
-                shadowColor: '#1e293b',
-                shadowOffset: { width: 0, height: 5 },
-                shadowOpacity: 0.16,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <View style={{ width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#f3f4f6' }}>
-                {item.post_type === 'swap' && item.image_url ? (
-                  <Image source={{ uri: item.image_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                ) : (
-                  <BookCover coverUrl={item.cover_image_url} width={CARD_W} height={CARD_H} style={{ borderRadius: 8 }} />
-                )}
-                {unavailable && (
-                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                      {item.availability === 'pending' ? 'PENDING' : 'SWAPPED'}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            <Text style={{ fontSize: 13, fontFamily: fonts.serifMedium, color: '#1a1a1a', marginTop: 6 }} numberOfLines={1}>
-              {item.title}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+  const renderBooks = () => (
+    <BookGrid posts={filteredPosts} onPress={handlePostPress} onLongPress={handlePostLongPress} />
   );
 
   const renderFooter = () => (
