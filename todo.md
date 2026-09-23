@@ -77,6 +77,32 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [ ] **Rebuild + resubmit to TestFlight** so these reach the device (verify in the simulator first).
 - [ ] `app.json` android `permissions` are duplicated — harmless for iOS; dedupe before an Android build.
 
+### Device QA — round 3 (2026-09-24) — all JS, shippable over OTA
+**Batch A — bugs**
+- [ ] **Comments don't appear until you leave + return.** PostDetail only adds a new comment via the
+      realtime subscription, which isn't firing → append the created comment locally right away.
+- [ ] **Avatar doesn't show on Profile after upload** (shows in Edit, appears later). Upload overwrites
+      the same file URL, so the image cache serves the stale one → cache-bust the URL on upload.
+- [ ] **New account briefly shows "swap already sent"** on a book the deleted account had requested,
+      then flips to "Request swap". Don't render swap state until the eligibility check finishes;
+      clear per-user caches on sign-out.
+- [ ] **Cold open flashes Sign in/Sign up before the feed.** Route only after Supabase reports the
+      initial session (token refresh), not on the first `getSession()`.
+- [ ] **Profile tab shows 0 posts, then the real count** (+ "drops from the top" feel) → cache profile data.
+- [ ] **Book covers are low-res/blurry.** We use Google's `zoom=1` thumbnail → request the high-res
+      image, and upgrade already-stored cover URLs at render time.
+
+**Batch B — features**
+- [ ] Tap a username/avatar in the Feed → that user's profile.
+- [ ] Redesign the other-user profile screen (match the new Profile design).
+- [ ] Username editable in Edit Profile (format + uniqueness check).
+- [ ] City picker from a list in Profile/Edit Profile (need the region — UK?).
+- [ ] Notifications for **comments** and **someone shelving your book** (likes already notify).
+
+**Batch C — performance / feel**
+- [ ] App-wide data cache so screens don't reload every visit (also fixes the Profile "0" flash).
+- [ ] Smooth Feed ↔ Swaps tab transition.
+
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
       created, readers who have that book on their want-to-read shelf within 25 mi get a push +
