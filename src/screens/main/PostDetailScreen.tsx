@@ -11,7 +11,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { Image } from 'expo-image';
 import { useRoute } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';

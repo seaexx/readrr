@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { fonts } from '../../theme/fonts';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { BookInfo } from '../../services/booksService';

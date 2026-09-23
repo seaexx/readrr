@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from './SafeAreaView';
 import BarcodeScanner from './BarcodeScanner';
 import BookCover from './BookCover';
 import { fetchBookByISBN, searchBooks, BookInfo } from '../services/booksService';

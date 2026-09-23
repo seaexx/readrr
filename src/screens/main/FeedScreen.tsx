@@ -9,15 +9,17 @@ import {
   Dimensions,
   Alert,
   Linking,
+  ScrollView,
+  Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { supabase } from '../../config/supabase';
 import { getSocialPosts, getSwapPosts, updateUserLocation } from '../../services/postsService';
 import { likePost, unlikePost, getEngagementForPosts } from '../../services/engagementService';
-import { seedPostCache } from '../../utils/memoryCache';
+import { seedPostCache, getPersisted, setPersisted } from '../../utils/memoryCache';
 import { getUnreadCount } from '../../services/notificationsService';
 import { useAuthStore } from '../../store/authStore';
 import { Post } from '../../models/Post';
@@ -80,19 +82,43 @@ export default function FeedScreen({ navigation }: Props) {
   const cacheRef = useRef<Record<TabType, PostWithEngagement[]>>({ feed: [], swaps: [] });
   const pendingRef = useRef<PostWithEngagement[] | null>(null);
   const activeTabRef = useRef<TabType>(activeTab);
-  // Each tab keeps its own scroll position across switches.
-  const listRef = useRef<FlatList<PostWithEngagement>>(null);
-  const scrollOffsetsRef = useRef<Record<TabType, number>>({ feed: 0, swaps: 0 });
+  // Feed and Swaps are two side-by-side pages in a horizontal pager: swipe or
+  // tap to switch. Each page keeps its own list mounted, so scroll position and
+  // content survive switching.
+  const pagerRef = useRef<ScrollView>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const loadedRef = useRef<Record<TabType, boolean>>({ feed: false, swaps: false });
+  const [, forceRender] = useState(0);
+  const [pagerHeight, setPagerHeight] = useState(0);
+  // Lists painted from disk are last session's — replace them silently when
+  // fresh data lands rather than offering the "new posts" pill.
+  const fromDiskRef = useRef<Record<TabType, boolean>>({ feed: false, swaps: false });
+  const diskKey = (tab: TabType) => `feed:${session?.user.id}:${tab}`;
 
+  // Cold open: paint last session's lists from disk while fresh data loads.
   useEffect(() => {
-    // Restore the tab's own scroll position after its rows render
-    const offset = scrollOffsetsRef.current[activeTab] ?? 0;
-    const frame = requestAnimationFrame(() => {
-      listRef.current?.scrollToOffset({ offset, animated: false });
+    if (!session?.user.id) return;
+    (['feed', 'swaps'] as const).forEach(async (tab) => {
+      const saved = await getPersisted<PostWithEngagement[]>(diskKey(tab));
+      if (!saved?.length || cacheRef.current[tab].length > 0 || loadedRef.current[tab]) return;
+      cacheRef.current[tab] = saved;
+      fromDiskRef.current[tab] = true;
+      seedPostCache(saved);
+      if (activeTabRef.current === tab) {
+        setPosts(saved);
+        setLoading(false);
+      } else {
+        forceRender((n) => n + 1);
+      }
     });
-    return () => cancelAnimationFrame(frame);
-  }, [activeTab]);
+  }, [session?.user.id]);
   activeTabRef.current = activeTab;
+
+  // Keep the active tab's cache in step with edits (likes, load-more) so the
+  // off-screen page shows current data.
+  useEffect(() => {
+    cacheRef.current[activeTabRef.current] = posts;
+  }, [posts]);
 
   useFocusEffect(
     useCallback(() => {
@@ -172,6 +198,8 @@ export default function FeedScreen({ navigation }: Props) {
         : await getSwapPosts(20, 0, blocked, loc);
     const enriched = await enrichPosts(data);
     seedPostCache(enriched);
+    loadedRef.current[tab] = true;
+    setPersisted(diskKey(tab), enriched);
     return enriched;
   };
 
@@ -192,7 +220,9 @@ export default function FeedScreen({ navigation }: Props) {
         cacheRef.current[tab] = fresh;
         if (activeTabRef.current !== tab) return; // switched away mid-fetch
         const isNew = fresh.length > 0 && fresh[0]?.id !== cached[0]?.id;
-        if (isNew) {
+        const wasFromDisk = fromDiskRef.current[tab];
+        fromDiskRef.current[tab] = false;
+        if (isNew && !wasFromDisk) {
           // Newer content on top — don't yank the list; offer a pill instead.
           pendingRef.current = fresh;
           setNewAvailable(true);
@@ -231,7 +261,10 @@ export default function FeedScreen({ navigation }: Props) {
         if (status === 'granted') loc = await getFastPosition();
       }
       const fresh = await fetchTab(other, blocked, loc);
-      if (cacheRef.current[other].length === 0) cacheRef.current[other] = fresh;
+      if (cacheRef.current[other].length === 0) {
+        cacheRef.current[other] = fresh;
+        forceRender((n) => n + 1); // paint the neighbouring page
+      }
     } catch {
       // Best effort — the tab loads normally when opened.
     }
@@ -359,7 +392,7 @@ export default function FeedScreen({ navigation }: Props) {
   };
 
   const handleTabChange = (tab: TabType) => {
-    if (tab === activeTab) return;
+    if (tab === activeTabRef.current) return;
     setNewAvailable(false);
     pendingRef.current = null;
     setActiveTab(tab);
@@ -616,8 +649,8 @@ export default function FeedScreen({ navigation }: Props) {
     );
   };
 
-  const renderEmpty = () => {
-    const isSwaps = activeTab === 'swaps';
+  const renderEmpty = (tab: TabType) => {
+    const isSwaps = tab === 'swaps';
     const noNearby = isSwaps && userLocation && !locationDenied;
 
     return (
@@ -648,6 +681,162 @@ export default function FeedScreen({ navigation }: Props) {
     return (
       <View className="py-4">
         <ActivityIndicator size="small" color="#38B6FF" />
+      </View>
+    );
+  };
+
+  const goToTab = (tab: TabType) => {
+    pagerRef.current?.scrollTo({ x: tab === 'feed' ? 0 : SCREEN_WIDTH, animated: true });
+    handleTabChange(tab);
+  };
+
+  const renderPage = (tab: TabType) => {
+    const isActive = tab === activeTab;
+    const pagePosts = isActive ? posts : cacheRef.current[tab];
+    const pageLoading = isActive ? loading : !loadedRef.current[tab] && pagePosts.length === 0;
+
+    let body;
+    if (pageLoading) {
+      body = (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#38B6FF" />
+        </View>
+      );
+    } else if (isActive && error) {
+      body = (
+        <View className="flex-1 items-center justify-center px-8">
+          <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 19, fontFamily: fonts.serifSemiBold, color: '#374151', textAlign: 'center', marginBottom: 8 }}>
+            Couldn't load {tab === 'feed' ? 'feed' : 'swaps'}
+          </Text>
+          <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={handleRetry} className="bg-primary px-6 py-3 rounded-xl">
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    } else {
+      body = (
+        <>
+          {tab === 'feed' && hasPosted === false && !promptDismissed && (
+            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af', marginBottom: 4 }}>
+                Share what you're reading
+              </Text>
+              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
+                Add your first book so other readers can find you. Browse as long as you like first.
+              </Text>
+              <View className="flex-row items-center" style={{ gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('FirstPost')}
+                  className="bg-primary px-5 py-2.5 rounded-xl"
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>Add your first book</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setPromptDismissed(true)} className="px-4 py-2.5">
+                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Later</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {tab === 'swaps' && locationPromptNeeded && (
+            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <MapPin size={16} color="#1d4ed8" weight="regular" />
+                <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af' }}>
+                  See books near you
+                </Text>
+              </View>
+              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
+                Readrr uses your location to show swaps within 25 miles. Your exact location is never shared with other readers.
+              </Text>
+              <View className="flex-row items-center" style={{ gap: 8 }}>
+                <TouchableOpacity
+                  onPress={handleEnableLocation}
+                  className="bg-primary px-5 py-2.5 rounded-xl"
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>Enable location</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setLocationPromptNeeded(false); setLocationDenied(true); }} className="px-4 py-2.5">
+                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Not now</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {tab === 'swaps' && userLocation && !locationDenied && pagePosts.length > 0 && (
+            <View className="px-4 py-2 bg-blue-50 flex-row items-center justify-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MapPin size={12} color="#1d4ed8" weight="regular" /><Text style={{ fontSize: 12, color: '#1d4ed8' }}>Showing nearby swaps within 25 miles</Text></View>
+            </View>
+          )}
+          {tab === 'swaps' && locationDenied && (
+            <View className="px-4 py-2 bg-amber-50 flex-row items-center justify-center" style={{ gap: 6, flexWrap: 'wrap' }}>
+              <Text style={{ fontSize: 12, color: '#92400e', textAlign: 'center' }}>
+                Location off — showing all swaps.
+              </Text>
+              <TouchableOpacity onPress={handleEnableFromBanner} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={{ fontSize: 12, color: '#1d4ed8', fontWeight: '700' }}>Enable location</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {isActive && newAvailable && (
+            <TouchableOpacity
+              onPress={handleShowNew}
+              activeOpacity={0.85}
+              style={{ alignSelf: 'center', marginTop: 8, marginBottom: 2 }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: '#38B6FF',
+                  paddingHorizontal: 14,
+                  paddingVertical: 7,
+                  borderRadius: 20,
+                  shadowColor: '#1e293b',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+              >
+                <ArrowUp size={14} color="#fff" weight="bold" />
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
+                  New {tab === 'feed' ? 'posts' : 'swaps'} · pull to refresh
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          <FlatList
+            data={pagePosts}
+            renderItem={renderBookCard}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={{
+              justifyContent: 'space-between',
+              paddingHorizontal: PADDING,
+              gap: GAP,
+            }}
+            contentContainerStyle={{
+              paddingTop: 16,
+              paddingBottom: 100,
+            }}
+            refreshControl={
+              <RefreshControl refreshing={isActive && refreshing} onRefresh={handleRefresh} />
+            }
+            onEndReached={isActive ? loadMore : undefined}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={() => renderEmpty(tab)}
+            ListFooterComponent={isActive ? renderFooter : null}
+            showsVerticalScrollIndicator={false}
+          />
+        </>
+      );
+    }
+
+    return (
+      <View key={tab} style={{ width: SCREEN_WIDTH, height: pagerHeight || undefined }}>
+        {body}
       </View>
     );
   };
@@ -686,180 +875,64 @@ export default function FeedScreen({ navigation }: Props) {
 
       {/* Tabs */}
       <View className="flex-row border-b border-gray-200">
-        <TouchableOpacity
-          onPress={() => handleTabChange('feed')}
-          className={`flex-1 py-3 ${
-            activeTab === 'feed' ? 'border-b-2 border-primary' : ''
-          }`}
-        >
-          <Text
-            style={{
-              fontSize: 17,
-              fontFamily: fonts.serifSemiBold,
-              textAlign: 'center',
-              color: activeTab === 'feed' ? '#38B6FF' : '#6b7280',
-            }}
-          >
-            Feed
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => handleTabChange('swaps')}
-          className={`flex-1 py-3 ${
-            activeTab === 'swaps' ? 'border-b-2 border-primary' : ''
-          }`}
-        >
-          <Text
-            style={{
-              fontSize: 17,
-              fontFamily: fonts.serifSemiBold,
-              textAlign: 'center',
-              color: activeTab === 'swaps' ? '#38B6FF' : '#6b7280',
-            }}
-          >
-            Swaps
-          </Text>
-        </TouchableOpacity>
+        {(['feed', 'swaps'] as const).map((tab, i) => (
+          <TouchableOpacity key={tab} onPress={() => goToTab(tab)} className="flex-1 py-3">
+            <Text
+              style={{
+                fontSize: 17,
+                fontFamily: fonts.serifSemiBold,
+                textAlign: 'center',
+                color: activeTab === tab ? '#38B6FF' : '#6b7280',
+              }}
+            >
+              {tab === 'feed' ? 'Feed' : 'Swaps'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        {/* Underline follows the finger while swiping */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            bottom: -1,
+            left: 0,
+            width: SCREEN_WIDTH / 2,
+            height: 2,
+            backgroundColor: '#38B6FF',
+            transform: [
+              {
+                translateX: scrollX.interpolate({
+                  inputRange: [0, SCREEN_WIDTH],
+                  outputRange: [0, SCREEN_WIDTH / 2],
+                  extrapolate: 'clamp',
+                }),
+              },
+            ],
+          }}
+        />
       </View>
 
-      {/* Content */}
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#38B6FF" />
-        </View>
-      ) : error ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 19, fontFamily: fonts.serifSemiBold, color: '#374151', textAlign: 'center', marginBottom: 8 }}>
-            Couldn't load {activeTab === 'feed' ? 'feed' : 'swaps'}
-          </Text>
-          <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
-          <TouchableOpacity onPress={handleRetry} className="bg-primary px-6 py-3 rounded-xl">
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          {activeTab === 'feed' && hasPosted === false && !promptDismissed && (
-            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af', marginBottom: 4 }}>
-                Share what you're reading
-              </Text>
-              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
-                Add your first book so other readers can find you. Browse as long as you like first.
-              </Text>
-              <View className="flex-row items-center" style={{ gap: 8 }}>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('FirstPost')}
-                  className="bg-primary px-5 py-2.5 rounded-xl"
-                >
-                  <Text style={{ color: '#fff', fontWeight: '600' }}>Add your first book</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setPromptDismissed(true)} className="px-4 py-2.5">
-                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Later</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          {activeTab === 'swaps' && locationPromptNeeded && (
-            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <MapPin size={16} color="#1d4ed8" weight="regular" />
-                <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af' }}>
-                  See books near you
-                </Text>
-              </View>
-              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
-                Readrr uses your location to show swaps within 25 miles. Your exact location is never shared with other readers.
-              </Text>
-              <View className="flex-row items-center" style={{ gap: 8 }}>
-                <TouchableOpacity
-                  onPress={handleEnableLocation}
-                  className="bg-primary px-5 py-2.5 rounded-xl"
-                >
-                  <Text style={{ color: '#fff', fontWeight: '600' }}>Enable location</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setLocationPromptNeeded(false); setLocationDenied(true); }} className="px-4 py-2.5">
-                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Not now</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          {activeTab === 'swaps' && userLocation && !locationDenied && posts.length > 0 && (
-            <View className="px-4 py-2 bg-blue-50 flex-row items-center justify-center">
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MapPin size={12} color="#1d4ed8" weight="regular" /><Text style={{ fontSize: 12, color: '#1d4ed8' }}>Showing nearby swaps within 25 miles</Text></View>
-            </View>
-          )}
-          {activeTab === 'swaps' && locationDenied && (
-            <View className="px-4 py-2 bg-amber-50 flex-row items-center justify-center" style={{ gap: 6, flexWrap: 'wrap' }}>
-              <Text style={{ fontSize: 12, color: '#92400e', textAlign: 'center' }}>
-                Location off — showing all swaps.
-              </Text>
-              <TouchableOpacity onPress={handleEnableFromBanner} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={{ fontSize: 12, color: '#1d4ed8', fontWeight: '700' }}>Enable location</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          {newAvailable && (
-            <TouchableOpacity
-              onPress={handleShowNew}
-              activeOpacity={0.85}
-              style={{ alignSelf: 'center', marginTop: 8, marginBottom: 2 }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  backgroundColor: '#38B6FF',
-                  paddingHorizontal: 14,
-                  paddingVertical: 7,
-                  borderRadius: 20,
-                  shadowColor: '#1e293b',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-              >
-                <ArrowUp size={14} color="#fff" weight="bold" />
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
-                  New {activeTab === 'feed' ? 'posts' : 'swaps'} · pull to refresh
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          <FlatList
-          ref={listRef}
-          data={posts}
-          onScroll={(e) => {
-            scrollOffsetsRef.current[activeTab] = e.nativeEvent.contentOffset.y;
-          }}
-          scrollEventThrottle={64}
-
-          renderItem={renderBookCard}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={{
-            justifyContent: 'space-between',
-            paddingHorizontal: PADDING,
-            gap: GAP,
-          }}
-          contentContainerStyle={{
-            paddingTop: 16,
-            paddingBottom: 100,
-          }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-        />
-        </>
-      )}
+      {/* Pages */}
+      <Animated.ScrollView
+        ref={pagerRef as any}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        directionalLockEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+          useNativeDriver: true,
+        })}
+        onMomentumScrollEnd={(e) => {
+          const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+          handleTabChange(page === 0 ? 'feed' : 'swaps');
+        }}
+        style={{ flex: 1 }}
+        onLayout={(e) => setPagerHeight(e.nativeEvent.layout.height)}
+      >
+        {renderPage('feed')}
+        {renderPage('swaps')}
+      </Animated.ScrollView>
       <ReportModal
         visible={showReportModal}
         label="Post"

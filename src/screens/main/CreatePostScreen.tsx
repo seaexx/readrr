@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { fonts } from '../../theme/fonts';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 
 interface Props {
   navigation: any;

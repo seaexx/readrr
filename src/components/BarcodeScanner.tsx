@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from './SafeAreaView';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 interface Props {

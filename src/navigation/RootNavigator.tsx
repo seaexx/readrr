@@ -7,7 +7,7 @@ import { supabase } from '../config/supabase';
 import { useAuthStore } from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { registerForPushNotifications } from '../services/notificationsService';
-import { clearCache } from '../utils/memoryCache';
+import { clearCache, getPersisted, setPersisted } from '../utils/memoryCache';
 
 // Phosphor Icons
 import {
@@ -349,8 +349,20 @@ export default function RootNavigator() {
   // Check user profile and posts
   useEffect(() => {
     if (session?.user) {
+      const userId = session.user.id;
       setLoading(true);
-      fetchUserProfile(session.user.id);
+      // Cold open: route straight to the app with last session's profile while
+      // the fresh one loads, instead of holding a spinner for a network trip.
+      let fetched = false;
+      getPersisted<any>(`profile:${userId}`).then((saved) => {
+        if (!fetched && saved?.id === userId) {
+          setProfile(saved);
+          setLoading(false);
+        }
+      });
+      fetchUserProfile(userId).finally(() => {
+        fetched = true;
+      });
       checkUserHasPosted(session.user.id);
       registerForPushNotifications(session.user.id);
     } else {
@@ -360,7 +372,9 @@ export default function RootNavigator() {
       setHasPosted(null);
       setProfile(null);
     }
-  }, [session]);
+    // Keyed on the user id, not the session object: the session object changes
+    // on every token refresh, which re-ran this and flashed the loading screen.
+  }, [session?.user.id]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -373,6 +387,7 @@ export default function RootNavigator() {
       if (error) throw error;
       if (data) {
         setProfile(data);
+        setPersisted(`profile:${userId}`, data);
       } else {
         setProfile(null);
       }
@@ -384,7 +399,9 @@ export default function RootNavigator() {
         hint: error?.hint,
         status: error?.status ?? error?.statusCode,
       });
-      setProfile(null);
+      // Offline/transient failure: keep a cached profile rather than bouncing
+      // the user into onboarding.
+      if (!useAuthStore.getState().profile) setProfile(null);
     } finally {
       // Gate routing until the profile is resolved, so we never flash the
       // onboarding (ProfileSetup) screen before landing on the feed.

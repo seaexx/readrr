@@ -116,6 +116,18 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       rendered with 0 insets for a frame then shifted down; plus the other-user profile swapped a
       full-screen spinner for the real layout. Both fixed (initialWindowMetrics + instant header).
 
+### Device QA — round 4 (2026-09-24) — screens "slide in from the top"
+- [x] **Every screen drew its first frame at the top, then snapped down.** Cause: the native
+      `<SafeAreaView>` from safe-area-context applies insets after layout (React Navigation warns
+      about this). Replaced app-wide with `components/SafeAreaView` (same API, uses
+      `useSafeAreaInsets`, correct on frame 1) + `initialWindowMetrics` on the provider.
+- [x] **Cold open: spinner, then feed.** Profile + first page of Feed/Swaps are now persisted to
+      disk (`getPersisted`/`setPersisted`, wiped on sign-out) and painted instantly, then refreshed.
+      Token refreshes no longer re-trigger the loading gate (effect keyed on user id).
+- [x] **Swipe between Feed and Swaps** — horizontal paging `ScrollView` (JS-only, OTA-safe), underline
+      tracks the finger, each page keeps its own list + scroll position.
+- [ ] Verify on device; if any screen still jumps, note which one.
+
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
       created, readers who have that book on their want-to-read shelf within 25 mi get a push +

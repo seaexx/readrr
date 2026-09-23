@@ -8,7 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useAuthStore } from '../../store/authStore';

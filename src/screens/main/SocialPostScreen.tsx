@@ -11,7 +11,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { Image } from 'expo-image';
 import BookCover from '../../components/BookCover';
 import BookFinder from '../../components/BookFinder';

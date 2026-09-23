@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getCached, setCached, seedPostCache } from '../../utils/memoryCache';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';

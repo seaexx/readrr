@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaView from '../../components/SafeAreaView';
 import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { getBlockedUserIds } from '../../services/blockService';
