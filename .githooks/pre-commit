@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# Secret guard: block commits whose staged changes look like they contain an
+# API key or token. Keys belong in .env.local (gitignored) or EAS env vars.
+#
+# Enabled via: git config core.hooksPath .githooks  (already set in this repo).
+
+set -euo pipefail
+
+# Only look at added/changed content in staged files.
+added="$(git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++' || true)"
+[ -z "$added" ] && exit 0
+
+# Patterns for common leaked credentials:
+#   - Google API key:    AIza + 35 url-safe chars
+#   - JWT (Supabase keys): eyJ....xxxx.yyyy  (three base64url segments)
+#   - Private keys / service-role secrets
+patterns='AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk_live_[0-9A-Za-z]{16,}'
+
+hits="$(printf '%s\n' "$added" | grep -nE "$patterns" || true)"
+
+if [ -n "$hits" ]; then
+  echo ""
+  echo "  ✋  Commit blocked — a possible secret was found in your staged changes:"
+  echo ""
+  printf '%s\n' "$hits" | sed 's/^/      /'
+  echo ""
+  echo "  API keys and tokens must NOT be committed. Put them in:"
+  echo "    • .env.local            (local dev — gitignored)"
+  echo "    • EAS environment vars  (builds — 'eas env:create')"
+  echo ""
+  echo "  If this is a false positive, review it and commit with --no-verify."
+  echo ""
+  exit 1
+fi
+
+exit 0
