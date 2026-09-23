@@ -183,7 +183,8 @@ export default function PostDetailScreen({ navigation }: Props) {
             .single();
 
           if (data) {
-            setComments((prev) => [...prev, data]);
+            // Deduped: our own comments are already appended the moment we post.
+            setComments((prev) => (prev.some((c) => c.id === data.id) ? prev : [...prev, data]));
           }
         }
       )
@@ -212,7 +213,9 @@ export default function PostDetailScreen({ navigation }: Props) {
     setPosting(true);
 
     try {
-      await createComment(postId, session.user.id, newComment.trim());
+      const created = await createComment(postId, session.user.id, newComment.trim());
+      // Show it immediately rather than waiting on the realtime event.
+      setComments((prev) => (prev.some((c) => c.id === created.id) ? prev : [...prev, created]));
       setNewComment('');
     } catch (error) {
       Alert.alert('Error', 'Failed to post comment');
@@ -241,8 +244,8 @@ export default function PostDetailScreen({ navigation }: Props) {
     }
   };
 
-  const handleCommentDelete = () => {
-    // Comments will be removed via real-time subscription
+  const handleCommentDelete = (commentId: string) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   if (loading || !post) {
@@ -437,7 +440,7 @@ export default function PostDetailScreen({ navigation }: Props) {
                   <CommentItem
                     key={comment.id}
                     comment={comment}
-                    onDelete={handleCommentDelete}
+                    onDelete={() => handleCommentDelete(comment.id)}
                   />
                 ))
               )}

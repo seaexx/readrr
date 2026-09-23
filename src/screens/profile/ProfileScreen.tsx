@@ -8,7 +8,9 @@ import {
   RefreshControl,
   Dimensions,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
+import { getCached, setCached } from '../../utils/memoryCache';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
@@ -33,7 +35,11 @@ interface Props {
 
 export default function ProfileScreen({ navigation }: Props) {
   const { profile, reset } = useAuthStore();
-  const [posts, setPosts] = useState<Post[]>([]);
+  // Seed from the in-memory cache so revisiting Profile renders instantly
+  // instead of flashing "0" while posts refetch.
+  const postsCacheKey = `profilePosts:${profile?.id}`;
+  const [posts, setPosts] = useState<Post[]>(() => getCached<Post[]>(postsCacheKey) ?? []);
+  const [postsLoaded, setPostsLoaded] = useState(() => getCached(postsCacheKey) !== undefined);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'swaps'>('posts');
   const [error, setError] = useState<string | null>(null);
@@ -50,10 +56,13 @@ export default function ProfileScreen({ navigation }: Props) {
     try {
       const data = await getUserPosts(profile.id);
       setPosts(data);
+      setCached(postsCacheKey, data);
+      setPostsLoaded(true);
       setError(null);
     } catch (error: any) {
       console.error('Error loading posts:', error);
       setError(error?.message || 'Failed to load posts. Pull to retry.');
+      setPostsLoaded(true);
     }
   };
 
@@ -195,7 +204,7 @@ export default function ProfileScreen({ navigation }: Props) {
         </View>
         <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
         <View className="flex-1 items-center">
-          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{posts.length}</Text>
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{postsLoaded ? posts.length : '–'}</Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Books</Text>
         </View>
       </View>
@@ -208,7 +217,7 @@ export default function ProfileScreen({ navigation }: Props) {
           style={activeTab === 'posts' ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
         >
           <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'posts' ? '#38B6FF' : '#9ca3af' }}>
-            Posts ({socialPosts.length})
+            {postsLoaded ? `Posts (${socialPosts.length})` : 'Posts'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -217,7 +226,7 @@ export default function ProfileScreen({ navigation }: Props) {
           style={activeTab === 'swaps' ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
         >
           <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'swaps' ? '#38B6FF' : '#9ca3af' }}>
-            Listed ({swapPosts.length})
+            {postsLoaded ? `Listed (${swapPosts.length})` : 'Listed'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -466,6 +475,10 @@ export default function ProfileScreen({ navigation }: Props) {
             <TouchableOpacity onPress={loadPosts} className="bg-primary px-6 py-3 rounded-xl">
               <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
             </TouchableOpacity>
+          </View>
+        ) : !postsLoaded ? (
+          <View className="items-center py-12">
+            <ActivityIndicator color="#38B6FF" />
           </View>
         ) : filteredPosts.length === 0 ? renderEmpty() : renderBooks()}
         {renderFooter()}

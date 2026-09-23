@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 import { Book } from 'phosphor-react-native';
+import { hiResCoverUrl } from '../services/booksService';
 
 interface Props {
   coverUrl: string | null | undefined;
@@ -23,9 +24,11 @@ export default function BookCover({ coverUrl, width, height, style, contentFit =
 
   return (
     <Image
-      source={{ uri: coverUrl }}
+      source={{ uri: hiResCoverUrl(coverUrl) ?? coverUrl }}
       style={[{ width, height }, style]}
       contentFit={contentFit}
+      cachePolicy="memory-disk"
+      transition={150}
     />
   );
 }

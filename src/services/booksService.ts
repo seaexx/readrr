@@ -42,6 +42,19 @@ export function normalizeIsbn(input: string): string {
   return input.replace(/[^0-9Xx]/g, '').toUpperCase();
 }
 
+// Upgrade any stored cover URL to a sharp one at render time. Google's default
+// `zoom=1` thumbnail is only 128×195 (blurry on cards); `fife=w600-h900` returns
+// ~600×900. Also forces https, drops the page-curl effect, and bumps Open
+// Library small/medium covers to large. Covers already saved on posts benefit too.
+export function hiResCoverUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  let u = url.replace(/^http:\/\//, 'https://').replace('&edge=curl', '');
+  if (u.includes('books.google.com/books/content') && !u.includes('fife=')) {
+    u += '&fife=w600-h900';
+  }
+  return u.replace(/-(S|M)\.jpg$/, '-L.jpg');
+}
+
 function extractBookId(url: string): string | null {
   const match = url.match(/[?&]id=([^&]+)/);
   return match ? match[1] : null;
@@ -56,7 +69,7 @@ function coverFrom(volumeInfo: any): string | null {
   if (!url) return null;
   const id = extractBookId(url);
   if (id) {
-    return `https://books.google.com/books/content?id=${id}&printsec=frontcover&img=1&zoom=1`;
+    return `https://books.google.com/books/content?id=${id}&printsec=frontcover&img=1&zoom=1&fife=w600-h900`;
   }
   return url.replace('http://', 'https://');
 }

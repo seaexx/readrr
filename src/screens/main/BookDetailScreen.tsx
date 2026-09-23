@@ -51,10 +51,11 @@ export default function BookDetailScreen({ navigation }: Props) {
   }, [post, session]);
 
   const checkSwapEligibility = async () => {
-    if (!post || !session?.user.id) {
-      setCheckingSwap(false);
-      return;
-    }
+    // Wait for the post + session, keeping the spinner up. (Previously this
+    // turned the spinner off before the post loaded, so "Swap request already
+    // sent" flashed until the real check came back.)
+    if (!post || !session?.user.id) return;
+    setCheckingSwap(true);
 
     // Skip check if it's own post or not available
     if (post.user_id === session.user.id || post.availability !== 'available') {

@@ -78,18 +78,18 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [ ] `app.json` android `permissions` are duplicated — harmless for iOS; dedupe before an Android build.
 
 ### Device QA — round 3 (2026-09-24) — all JS, shippable over OTA
-**Batch A — bugs**
-- [ ] **Comments don't appear until you leave + return.** PostDetail only adds a new comment via the
+**Batch A — bugs** ✅ shipped via OTA (migration 020 adds comments/messages/swaps to realtime)
+- [x] **Comments don't appear until you leave + return.** PostDetail only adds a new comment via the
       realtime subscription, which isn't firing → append the created comment locally right away.
-- [ ] **Avatar doesn't show on Profile after upload** (shows in Edit, appears later). Upload overwrites
+- [x] **Avatar doesn't show on Profile after upload** (shows in Edit, appears later). Upload overwrites
       the same file URL, so the image cache serves the stale one → cache-bust the URL on upload.
-- [ ] **New account briefly shows "swap already sent"** on a book the deleted account had requested,
+- [x] **New account briefly shows "swap already sent"** on a book the deleted account had requested,
       then flips to "Request swap". Don't render swap state until the eligibility check finishes;
       clear per-user caches on sign-out.
-- [ ] **Cold open flashes Sign in/Sign up before the feed.** Route only after Supabase reports the
+- [x] **Cold open flashes Sign in/Sign up before the feed.** Route only after Supabase reports the
       initial session (token refresh), not on the first `getSession()`.
-- [ ] **Profile tab shows 0 posts, then the real count** (+ "drops from the top" feel) → cache profile data.
-- [ ] **Book covers are low-res/blurry.** We use Google's `zoom=1` thumbnail → request the high-res
+- [x] **Profile tab shows 0 posts, then the real count** (+ "drops from the top" feel) → cache profile data.
+- [x] **Book covers are low-res/blurry.** We use Google's `zoom=1` thumbnail → request the high-res
       image, and upgrade already-stored cover URLs at render time.
 
 **Batch B — features**

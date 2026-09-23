@@ -7,6 +7,7 @@ import { supabase } from '../config/supabase';
 import { useAuthStore } from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { registerForPushNotifications } from '../services/notificationsService';
+import { clearCache } from '../utils/memoryCache';
 
 // Phosphor Icons
 import {
@@ -334,6 +335,8 @@ export default function RootNavigator() {
         if (!session) {
           setHasPosted(null);
           setProfile(null);
+          setLoading(false);
+          clearCache(); // never show one account's cached data to the next
         }
       }
     );
@@ -349,9 +352,11 @@ export default function RootNavigator() {
       checkUserHasPosted(session.user.id);
       registerForPushNotifications(session.user.id);
     } else {
+      // Don't clear `loading` here: on a cold open the session is briefly null
+      // before storage is read, which flashed Sign in/Sign up. The getSession()
+      // and sign-out paths above clear it once the answer is actually known.
       setHasPosted(null);
       setProfile(null);
-      setLoading(false);
     }
   }, [session]);
 

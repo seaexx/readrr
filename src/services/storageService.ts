@@ -80,10 +80,25 @@ async function uploadFile(
   return data.publicUrl;
 }
 
-// Avatar upload
+// Avatar upload. Each upload gets a unique filename so the public URL changes —
+// overwriting `avatar.jpg` meant the CDN (1h cache) and the app's image cache
+// kept serving the old picture. Older avatars are cleaned up afterwards.
 export async function uploadAvatar(uri: string, userId: string): Promise<string> {
-  const filePath = `${userId}/avatar.jpg`;
-  return uploadFile(uri, 'avatars', filePath, true);
+  const fileName = `avatar-${Date.now()}.jpg`;
+  const url = await uploadFile(uri, 'avatars', `${userId}/${fileName}`, false);
+
+  try {
+    const { data: existing } = await supabase.storage.from('avatars').list(userId);
+    const stale = (existing || [])
+      .map((f) => f.name)
+      .filter((name) => name !== fileName)
+      .map((name) => `${userId}/${name}`);
+    if (stale.length > 0) await supabase.storage.from('avatars').remove(stale);
+  } catch {
+    // Best-effort cleanup; the new avatar is already live.
+  }
+
+  return url;
 }
 
 // Post image upload
