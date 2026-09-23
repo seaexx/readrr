@@ -344,12 +344,14 @@ export default function RootNavigator() {
   // Check user profile and posts
   useEffect(() => {
     if (session?.user) {
+      setLoading(true);
       fetchUserProfile(session.user.id);
       checkUserHasPosted(session.user.id);
       registerForPushNotifications(session.user.id);
     } else {
       setHasPosted(null);
       setProfile(null);
+      setLoading(false);
     }
   }, [session]);
 
@@ -376,6 +378,10 @@ export default function RootNavigator() {
         status: error?.status ?? error?.statusCode,
       });
       setProfile(null);
+    } finally {
+      // Gate routing until the profile is resolved, so we never flash the
+      // onboarding (ProfileSetup) screen before landing on the feed.
+      setLoading(false);
     }
   };
 
@@ -397,8 +403,6 @@ export default function RootNavigator() {
         status: error?.status ?? error?.statusCode,
       });
       setHasPosted(false);
-    } finally {
-      setLoading(false);
     }
   };
 

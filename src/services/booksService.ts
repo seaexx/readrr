@@ -26,7 +26,12 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    return await fetch(url, { signal: controller.signal });
+    // X-Ios-Bundle-Identifier lets a Google key that's restricted to this iOS
+    // app authorize the request (harmless when the key is unrestricted).
+    return await fetch(url, {
+      signal: controller.signal,
+      headers: { 'X-Ios-Bundle-Identifier': 'app.readrr' },
+    });
   } finally {
     clearTimeout(timer);
   }

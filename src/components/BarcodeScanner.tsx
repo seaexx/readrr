@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -16,9 +16,14 @@ export default function BarcodeScanner({
 }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  // Synchronous lock: the camera fires onBarcodeScanned many times/sec, faster
+  // than the `scanned` state updates — a ref blocks the extra calls immediately
+  // (otherwise the lookup + "not found" alert stack up several deep).
+  const lockedRef = useRef(false);
 
   const handleBarCodeScanned = ({ data }: { data: string }) => {
-    if (scanned) return;
+    if (lockedRef.current) return;
+    lockedRef.current = true;
     setScanned(true);
     onBarcodeScanned(data);
   };
