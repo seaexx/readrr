@@ -16,18 +16,19 @@ export default function SafeAreaView({ edges, style, children, ...rest }: Props)
   const insets = useSafeAreaInsets();
   const e = edges ?? ['top', 'right', 'bottom', 'left'];
 
+  // Only set padding for edges that actually have an inset. Writing an explicit
+  // 0 would override className padding (e.g. `px-6` on BookFinder), which made
+  // those screens lose their side margins.
+  const insetStyle: Record<string, number> = {};
+  if (e.includes('top') && insets.top) insetStyle.paddingTop = insets.top;
+  if (e.includes('bottom') && insets.bottom) insetStyle.paddingBottom = insets.bottom;
+  if (e.includes('left') && insets.left) insetStyle.paddingLeft = insets.left;
+  if (e.includes('right') && insets.right) insetStyle.paddingRight = insets.right;
+
   return (
     <View
       {...rest}
-      style={[
-        {
-          paddingTop: e.includes('top') ? insets.top : 0,
-          paddingRight: e.includes('right') ? insets.right : 0,
-          paddingBottom: e.includes('bottom') ? insets.bottom : 0,
-          paddingLeft: e.includes('left') ? insets.left : 0,
-        },
-        style,
-      ]}
+      style={[insetStyle, style]}
     >
       {children}
     </View>
