@@ -96,7 +96,8 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [ ] Tap a username/avatar in the Feed → that user's profile.
 - [ ] Redesign the other-user profile screen (match the new Profile design).
 - [ ] Username editable in Edit Profile (format + uniqueness check).
-- [ ] City picker from a list in Profile/Edit Profile (need the region — UK?).
+- [ ] City autocomplete in Edit Profile — worldwide, type-ahead via Photon (free OpenStreetMap
+      geocoder, no key); store the city name + coordinates.
 - [ ] Notifications for **comments** and **someone shelving your book** (likes already notify).
 
 **Batch C — performance / feel**
