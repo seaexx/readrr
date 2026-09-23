@@ -46,7 +46,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Readrr uses the camera to scan a book's barcode so you can add it in seconds."
+          "cameraPermission": "Readrr uses the camera to scan a book's barcode and to take photos of books you list for swap."
         }
       ],
       [

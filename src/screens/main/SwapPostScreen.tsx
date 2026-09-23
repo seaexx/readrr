@@ -6,6 +6,7 @@ import {
   ScrollView,
   Alert,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import SafeAreaView from '../../components/SafeAreaView';
 import { Image } from 'expo-image';
@@ -64,23 +65,53 @@ export default function SwapPostScreen({ navigation }: Props) {
   const [swapType, setSwapType] = useState<SwapType>('trade');
   const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
+  const pickerOptions: ImagePicker.ImagePickerOptions = {
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [3, 4],
+    quality: 0.8,
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Camera access needed',
+        'Allow camera access in Settings to take a photo of your book.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
+      );
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync(pickerOptions);
+    if (!result.canceled) {
+      setBookImage(result.assets[0].uri);
+    }
+  };
+
+  const chooseFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'We need permission to access your photos');
       return;
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.8,
-    });
-
+    const result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
     if (!result.canceled) {
       setBookImage(result.assets[0].uri);
     }
+  };
+
+  const pickImage = () => {
+    Alert.alert(bookImage ? 'Change photo' : 'Add a photo of your book', undefined, [
+      { text: 'Take Photo', onPress: takePhoto },
+      { text: 'Choose from Library', onPress: chooseFromLibrary },
+      ...(bookImage
+        ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => setBookImage(null) }]
+        : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
   };
 
   const handlePost = async () => {
@@ -224,7 +255,7 @@ export default function SwapPostScreen({ navigation }: Props) {
             ) : (
               <View className="w-full h-48 bg-gray-100 rounded-xl items-center justify-center">
                 <Camera size={40} color="#9ca3af" weight="duotone" style={{ marginBottom: 8 }} />
-                <Text className="text-gray-500">Add photo of your book</Text>
+                <Text className="text-gray-500">Take or choose a photo of your book</Text>
               </View>
             )}
           </TouchableOpacity>
