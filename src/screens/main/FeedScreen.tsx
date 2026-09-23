@@ -16,7 +16,8 @@ import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { supabase } from '../../config/supabase';
 import { getSocialPosts, getSwapPosts, updateUserLocation } from '../../services/postsService';
-import { likePost, unlikePost } from '../../services/engagementService';
+import { likePost, unlikePost, getEngagementForPosts } from '../../services/engagementService';
+import { seedPostCache } from '../../utils/memoryCache';
 import { getUnreadCount } from '../../services/notificationsService';
 import { useAuthStore } from '../../store/authStore';
 import { Post } from '../../models/Post';
@@ -79,6 +80,18 @@ export default function FeedScreen({ navigation }: Props) {
   const cacheRef = useRef<Record<TabType, PostWithEngagement[]>>({ feed: [], swaps: [] });
   const pendingRef = useRef<PostWithEngagement[] | null>(null);
   const activeTabRef = useRef<TabType>(activeTab);
+  // Each tab keeps its own scroll position across switches.
+  const listRef = useRef<FlatList<PostWithEngagement>>(null);
+  const scrollOffsetsRef = useRef<Record<TabType, number>>({ feed: 0, swaps: 0 });
+
+  useEffect(() => {
+    // Restore the tab's own scroll position after its rows render
+    const offset = scrollOffsetsRef.current[activeTab] ?? 0;
+    const frame = requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset, animated: false });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeTab]);
   activeTabRef.current = activeTab;
 
   useFocusEffect(
@@ -107,8 +120,7 @@ export default function FeedScreen({ navigation }: Props) {
           try {
             const { status } = await Location.getForegroundPermissionsAsync();
             if (status === 'granted') {
-              const loc = await Location.getCurrentPositionAsync({});
-              locForFetch = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+              locForFetch = await getFastPosition();
               setUserLocation(locForFetch);
               setLocationDenied(false);
               setLocationPromptNeeded(false);
@@ -135,17 +147,19 @@ export default function FeedScreen({ navigation }: Props) {
     }, [activeTab, session?.user.id])
   );
 
-  const enrichPosts = async (data: Post[]): Promise<PostWithEngagement[]> =>
-    Promise.all(
-      (data || []).map(async (post) => {
-        const [likeCount, commentCount, hasLiked] = await Promise.all([
-          getLikeCount(post.id),
-          getCommentCount(post.id),
-          checkIfLiked(post.id),
-        ]);
-        return { ...post, likeCount, commentCount, hasLiked };
-      })
-    );
+  // A recent last-known fix is instant; a fresh GPS fix can take seconds and
+  // used to stall the Swaps tab before anything loaded.
+  const getFastPosition = async () => {
+    const last = await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000 });
+    const loc = last ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+    return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+  };
+
+  const enrichPosts = async (data: Post[]): Promise<PostWithEngagement[]> => {
+    const posts = data || [];
+    const engagement = await getEngagementForPosts(posts.map((p) => p.id), session?.user.id);
+    return posts.map((post) => ({ ...post, ...engagement[post.id] }));
+  };
 
   const fetchTab = async (
     tab: TabType,
@@ -156,7 +170,9 @@ export default function FeedScreen({ navigation }: Props) {
       tab === 'feed'
         ? await getSocialPosts(20, 0, blocked)
         : await getSwapPosts(20, 0, blocked, loc);
-    return enrichPosts(data);
+    const enriched = await enrichPosts(data);
+    seedPostCache(enriched);
+    return enriched;
   };
 
   const loadPostsWithBlocked = async (
@@ -195,6 +211,7 @@ export default function FeedScreen({ navigation }: Props) {
       const fresh = await fetchTab(tab, blocked, loc);
       cacheRef.current[tab] = fresh;
       if (activeTabRef.current === tab) setPosts(fresh);
+      prefetchOtherTab(tab, blocked);
     } catch (error: any) {
       console.error('Error loading posts:', error);
       setError(error?.message || 'Failed to load posts. Check your connection and try again.');
@@ -203,30 +220,21 @@ export default function FeedScreen({ navigation }: Props) {
     }
   };
 
-  const getLikeCount = async (postId: string) => {
-    const { count } = await supabase
-      .from('likes')
-      .select('*', { count: 'exact', head: true })
-      .eq('post_id', postId);
-    return count || 0;
-  };
-
-  const getCommentCount = async (postId: string) => {
-    const { count } = await supabase
-      .from('comments')
-      .select('*', { count: 'exact', head: true })
-      .eq('post_id', postId);
-    return count || 0;
-  };
-
-  const checkIfLiked = async (postId: string) => {
-    if (!session) return false;
-    const { data } = await supabase
-      .from('likes')
-      .select('id')
-      .match({ post_id: postId, user_id: session.user.id })
-      .maybeSingle();
-    return !!data;
+  // Warm the other tab's cache in the background so the first switch is instant.
+  const prefetchOtherTab = async (current: TabType, blocked: string[]) => {
+    const other: TabType = current === 'feed' ? 'swaps' : 'feed';
+    if (cacheRef.current[other].length > 0) return;
+    try {
+      let loc: { latitude: number; longitude: number } | null = null;
+      if (other === 'swaps') {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') loc = await getFastPosition();
+      }
+      const fresh = await fetchTab(other, blocked, loc);
+      if (cacheRef.current[other].length === 0) cacheRef.current[other] = fresh;
+    } catch {
+      // Best effort — the tab loads normally when opened.
+    }
   };
 
   const handleRefresh = async () => {
@@ -301,16 +309,7 @@ export default function FeedScreen({ navigation }: Props) {
           ? await getSocialPosts(20, posts.length, blockedIds)
           : await getSwapPosts(20, posts.length, blockedIds, userLocation);
 
-      const postsWithCounts = await Promise.all(
-        (data || []).map(async (post) => {
-          const [likeCount, commentCount, hasLiked] = await Promise.all([
-            getLikeCount(post.id),
-            getCommentCount(post.id),
-            checkIfLiked(post.id),
-          ]);
-          return { ...post, likeCount, commentCount, hasLiked };
-        })
-      );
+      const postsWithCounts = await enrichPosts(data);
 
       setPosts((prev) => {
         const next = [...prev, ...postsWithCounts];
@@ -831,8 +830,13 @@ export default function FeedScreen({ navigation }: Props) {
             </TouchableOpacity>
           )}
           <FlatList
-          key={activeTab}
+          ref={listRef}
           data={posts}
+          onScroll={(e) => {
+            scrollOffsetsRef.current[activeTab] = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={64}
+
           renderItem={renderBookCard}
           keyExtractor={(item) => item.id}
           numColumns={2}

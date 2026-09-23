@@ -9,6 +9,7 @@ import { Post } from '../../models/Post';
 import { canRequestSwap, createSwapRequest, hasPendingRequest } from '../../services/swapsService';
 import { isBlocked } from '../../services/blockService';
 import { promptSaveToShelf } from '../../utils/shelfPrompt';
+import { getCachedPost, seedPostCache } from '../../utils/memoryCache';
 import { isOnShelf } from '../../services/shelfService';
 import { fonts } from '../../theme/fonts';
 import Avatar from '../../components/Avatar';
@@ -27,8 +28,9 @@ export default function BookDetailScreen({ navigation }: Props) {
   const { postId } = route.params as { postId: string };
   const session = useAuthStore((state) => state.session);
 
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Render instantly from the list the user tapped; refresh below.
+  const [post, setPost] = useState<Post | null>(() => getCachedPost<Post>(postId) ?? null);
+  const [loading, setLoading] = useState(() => !getCachedPost(postId));
   const [canSwap, setCanSwap] = useState(false);
   const [checkingSwap, setCheckingSwap] = useState(true);
   const [showSwapModal, setShowSwapModal] = useState(false);
@@ -48,7 +50,7 @@ export default function BookDetailScreen({ navigation }: Props) {
         .then(setSaved)
         .catch(() => {});
     }
-  }, [post, session]);
+  }, [post?.id, post?.availability, session?.user.id]);
 
   const checkSwapEligibility = async () => {
     // Wait for the post + session, keeping the spinner up. (Previously this
@@ -91,6 +93,7 @@ export default function BookDetailScreen({ navigation }: Props) {
 
       if (error) throw error;
       setPost(data);
+      seedPostCache([data]);
     } catch (error) {
       console.error('Error loading post:', error);
       Alert.alert('Error', 'Failed to load book details');

@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
+import { getCached, setCached } from '../../utils/memoryCache';
 import { Bell, Star, MapPin, CheckCircle, ArrowsClockwise, ChatCircle, ArrowLeft, WarningCircle, Bookmark } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import {
@@ -47,8 +48,9 @@ function notificationIcon(title: string): string {
 
 export default function NotificationsScreen({ navigation }: Props) {
   const session = useAuthStore((state) => state.session);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `notifications:${session?.user.id}`;
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => getCached<AppNotification[]>(cacheKey) ?? []);
+  const [loading, setLoading] = useState(() => getCached(cacheKey) === undefined);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +65,7 @@ export default function NotificationsScreen({ navigation }: Props) {
     try {
       const data = await getNotifications(session.user.id);
       setNotifications(data);
+      setCached(cacheKey, data);
       setError(null);
     } catch (err: any) {
       console.error('Error loading notifications:', err);

@@ -23,7 +23,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ReportModal from '../../components/ReportModal';
 import { blockUser, unblockUser, isBlocked } from '../../services/blockService';
 import { reportUser } from '../../services/reportService';
-import { getCached, setCached } from '../../utils/memoryCache';
+import { getCached, setCached, seedPostCache, getUserPreview } from '../../utils/memoryCache';
 
 interface Props {
   navigation: any;
@@ -44,6 +44,9 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   const cacheKey = `otherProfile:${userId}`;
   const cached = getCached<CachedProfile>(cacheKey);
   const [user, setUser] = useState<User | null>(cached?.user ?? null);
+  // Name + avatar from whatever list we came from, so the header renders
+  // immediately instead of popping in after the fetch.
+  const preview = getUserPreview(userId);
   const [posts, setPosts] = useState<Post[]>(cached?.posts ?? []);
   const [blocked, setBlocked] = useState(cached?.blocked ?? false);
   const [loading, setLoading] = useState(!cached);
@@ -75,6 +78,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
       }
       const userPosts = blockStatus ? [] : await getUserPosts(userId, 60);
 
+      seedPostCache(userPosts);
       setUser(userData);
       setBlocked(blockStatus);
       setPosts(userPosts);
@@ -172,7 +176,7 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     </View>
   );
 
-  if (!user) {
+  if (!user && !preview) {
     if (error && !loading) {
       return (
         <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -191,6 +195,13 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     return <LoadingSpinner fullScreen />;
   }
 
+  const header = {
+    username: user?.username ?? preview?.username ?? '',
+    avatar_url: user?.avatar_url ?? preview?.avatar_url ?? null,
+    city: user?.city ?? preview?.city ?? null,
+    bio: user?.bio ?? null,
+  };
+
   const socialPosts = posts.filter((p) => p.post_type === 'social');
   const swapPosts = posts.filter((p) => p.post_type === 'swap');
   const filteredPosts = activeTab === 'posts' ? socialPosts : swapPosts;
@@ -199,14 +210,14 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
     <View>
       {/* Profile hero */}
       <View className="items-center px-6 pt-2 pb-5">
-        <Avatar avatarUrl={user.avatar_url} username={user.username} size={96} />
-        <Text style={{ fontSize: 24, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 14 }}>@{user.username}</Text>
-        {user.city && (
-          <Text style={{ fontSize: 14, color: '#9ca3af', marginTop: 4 }}>{user.city}</Text>
+        <Avatar avatarUrl={header.avatar_url} username={header.username || 'User'} size={96} />
+        <Text style={{ fontSize: 24, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 14 }}>@{header.username}</Text>
+        {header.city && (
+          <Text style={{ fontSize: 14, color: '#9ca3af', marginTop: 4 }}>{header.city}</Text>
         )}
-        {user.bio && (
+        {header.bio && (
           <Text style={{ fontSize: 15, color: '#4b5563', textAlign: 'center', marginTop: 12, lineHeight: 21 }}>
-            {user.bio}
+            {header.bio}
           </Text>
         )}
       </View>
@@ -217,12 +228,12 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
         style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f3f4f6', paddingVertical: 14 }}
       >
         <View className="flex-1 items-center">
-          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{user.total_swaps || 0}</Text>
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{user ? user.total_swaps || 0 : '–'}</Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Swaps</Text>
         </View>
         <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
         <View className="flex-1 items-center">
-          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{user.avg_rating?.toFixed(1) || '0.0'}</Text>
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{user ? user.avg_rating?.toFixed(1) || '0.0' : '–'}</Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Rating</Text>
         </View>
         <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
@@ -257,6 +268,17 @@ export default function OtherUserProfileScreen({ navigation }: Props) {
   );
 
   const renderBody = () => {
+    if (error && !user) {
+      return (
+        <View className="items-center py-12 px-8">
+          <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
+          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 12 }}>Couldn't load profile</Text>
+          <TouchableOpacity onPress={loadData} className="bg-primary px-6 py-3 rounded-xl">
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     if (blocked) {
       return (
         <View className="items-center py-12 px-6">

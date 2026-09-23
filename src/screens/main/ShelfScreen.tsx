@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useAuthStore } from '../../store/authStore';
+import { getCached, setCached } from '../../utils/memoryCache';
 import {
   ShelfItem,
   ShelfName,
@@ -58,8 +59,9 @@ const OTHER_SHELVES: Record<ShelfName, { key: ShelfName; label: string }[]> = {
 export default function ShelfScreen({ navigation }: Props) {
   const session = useAuthStore((state) => state.session);
   const [activeShelf, setActiveShelf] = useState<ShelfName>('want_to_read');
-  const [items, setItems] = useState<ShelfItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const shelfKey = (shelf: ShelfName) => `shelf:${session?.user.id}:${shelf}`;
+  const [items, setItems] = useState<ShelfItem[]>(() => getCached<ShelfItem[]>(shelfKey('want_to_read')) ?? []);
+  const [loading, setLoading] = useState(() => getCached(shelfKey('want_to_read')) === undefined);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [findingBook, setFindingBook] = useState(false);
@@ -72,17 +74,32 @@ export default function ShelfScreen({ navigation }: Props) {
 
   const loadShelf = async () => {
     if (!session?.user.id) return;
-    setLoading(true);
+    const key = shelfKey(activeShelf);
+    // Show the cached shelf instantly; only spin on a first-ever load.
+    const cached = getCached<ShelfItem[]>(key);
+    if (cached) {
+      setItems(cached);
+      setLoading(false);
+    } else {
+      setItems([]);
+      setLoading(true);
+    }
     setError(null);
     try {
       const data = await getShelf(session.user.id, activeShelf);
+      // Show the books now; the nearby-availability flags fill in after.
+      setItems(data);
+      setCached(key, data);
+      setLoading(false);
 
       // Slice 4: for Want to Read, flag items with an available nearby copy
       if (activeShelf === 'want_to_read' && data.length > 0) {
         try {
           const { status } = await Location.getForegroundPermissionsAsync();
           if (status === 'granted') {
-            const loc = await Location.getCurrentPositionAsync({});
+            const loc =
+              (await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000 })) ??
+              (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
             const blocked = await getBlockedUserIds(session.user.id).catch(() => [] as string[]);
             const nearby = await getSwapPosts(100, 0, blocked, {
               latitude: loc.coords.latitude,
@@ -107,7 +124,8 @@ export default function ShelfScreen({ navigation }: Props) {
         }
       }
 
-      setItems(data);
+      setItems([...data]);
+      setCached(key, data);
     } catch (err: any) {
       console.error('Error loading shelf:', err);
       setError(err?.message || 'Failed to load shelf.');

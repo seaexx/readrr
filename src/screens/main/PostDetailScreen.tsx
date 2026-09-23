@@ -33,6 +33,7 @@ import { fonts } from '../../theme/fonts';
 import { promptSaveToShelf } from '../../utils/shelfPrompt';
 import { isOnShelf } from '../../services/shelfService';
 import { deletePost } from '../../services/postsService';
+import { getCached, setCached, getCachedPost, seedPostCache } from '../../utils/memoryCache';
 
 interface Props {
   navigation: any;
@@ -43,17 +44,19 @@ export default function PostDetailScreen({ navigation }: Props) {
   const { postId } = route.params as { postId: string };
   const session = useAuthStore((state) => state.session);
 
-  const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+  // Render instantly from the list the user tapped (Feed/profile); refresh below.
+  const cachedPost = getCachedPost<Post & { likeCount?: number; hasLiked?: boolean }>(postId);
+  const [post, setPost] = useState<Post | null>(cachedPost ?? null);
+  const [comments, setComments] = useState<Comment[]>(() => getCached<Comment[]>(`comments:${postId}`) ?? []);
   const [newComment, setNewComment] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedPost);
   const [posting, setPosting] = useState(false);
   const [description, setDescription] = useState<string | null>(null);
   const [loadingDescription, setLoadingDescription] = useState(false);
   const [descriptionFetched, setDescriptionFetched] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [hasLiked, setHasLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(cachedPost?.likeCount ?? 0);
+  const [hasLiked, setHasLiked] = useState(cachedPost?.hasLiked ?? false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -108,36 +111,34 @@ export default function PostDetailScreen({ navigation }: Props) {
 
   const loadData = async () => {
     try {
-      // Load post
-      const { data: postData, error: postError } = await supabase
-        .from('posts')
-        .select('*, user:users(id, username, avatar_url)')
-        .eq('id', postId)
-        .single();
-
-      if (postError) throw postError;
-      setPost(postData);
-
-      // Load comments
-      const commentsData = await getPostComments(postId);
-      setComments(commentsData);
-
-      // Load engagement counts
-      const { count: likes } = await supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', postId);
-      setLikeCount(likes || 0);
-
-      // Check if user has liked
-      if (session) {
-        const { data: likeData } = await supabase
+      // Post, comments and likes in parallel
+      const [postRes, commentsData, likesRes, myLikeRes] = await Promise.all([
+        supabase
+          .from('posts')
+          .select('*, user:users(id, username, avatar_url)')
+          .eq('id', postId)
+          .single(),
+        getPostComments(postId),
+        supabase
           .from('likes')
-          .select('id')
-          .match({ post_id: postId, user_id: session.user.id })
-          .maybeSingle();
-        setHasLiked(!!likeData);
-      }
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', postId),
+        session
+          ? supabase
+              .from('likes')
+              .select('id')
+              .match({ post_id: postId, user_id: session.user.id })
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      if (postRes.error) throw postRes.error;
+      setPost(postRes.data);
+      setComments(commentsData);
+      setCached(`comments:${postId}`, commentsData);
+      setLikeCount(likesRes.count || 0);
+      setHasLiked(!!myLikeRes.data);
+      seedPostCache([{ ...postRes.data, likeCount: likesRes.count || 0, hasLiked: !!myLikeRes.data }]);
     } catch (error) {
       console.error('Error loading data:', error);
       Alert.alert('Error', 'Failed to load post');
@@ -149,9 +150,16 @@ export default function PostDetailScreen({ navigation }: Props) {
 
   const fetchDescription = async (isbn: string) => {
     console.log('📖 Fetching description for ISBN:', isbn);
+    const cachedDescription = getCached<string | null>(`description:${isbn}`);
+    if (cachedDescription !== undefined) {
+      setDescription(cachedDescription);
+      setDescriptionFetched(true);
+      return;
+    }
     setLoadingDescription(true);
     try {
       const bookInfo = await fetchBookByISBN(isbn);
+      setCached(`description:${isbn}`, bookInfo.description ?? null);
       console.log('📖 Book info received:', bookInfo.title, '| Description:', bookInfo.description ? 'YES' : 'NO');
       if (bookInfo.description) {
         setDescription(bookInfo.description);

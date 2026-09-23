@@ -168,3 +168,42 @@ export async function getCommentCount(postId: string): Promise<number> {
   if (error) throw error;
   return count || 0;
 }
+
+// ============================================
+// BATCH ENGAGEMENT (feed cards)
+// ============================================
+
+export interface PostEngagement {
+  likeCount: number;
+  commentCount: number;
+  hasLiked: boolean;
+}
+
+// Like/comment counts + "did I like it" for many posts in 2 requests, instead
+// of 3 requests per post. Rows are counted client-side (fine at feed page sizes).
+export async function getEngagementForPosts(
+  postIds: string[],
+  userId?: string
+): Promise<Record<string, PostEngagement>> {
+  const result: Record<string, PostEngagement> = {};
+  postIds.forEach((id) => (result[id] = { likeCount: 0, commentCount: 0, hasLiked: false }));
+  if (postIds.length === 0) return result;
+
+  const [{ data: likes, error: likesError }, { data: comments, error: commentsError }] = await Promise.all([
+    supabase.from('likes').select('post_id, user_id').in('post_id', postIds),
+    supabase.from('comments').select('post_id').in('post_id', postIds),
+  ]);
+  if (likesError) throw likesError;
+  if (commentsError) throw commentsError;
+
+  for (const l of likes || []) {
+    const e = result[l.post_id];
+    if (!e) continue;
+    e.likeCount++;
+    if (userId && l.user_id === userId) e.hasLiked = true;
+  }
+  for (const c of comments || []) {
+    if (result[c.post_id]) result[c.post_id].commentCount++;
+  }
+  return result;
+}

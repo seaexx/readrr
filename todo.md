@@ -104,9 +104,17 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [x] Notifications for **comments** and **someone saving your book to a shelf** (first save only);
       tapping opens the post (BookDetail for swaps). Shared helper `notifyPostOwner`.
 
-**Batch C — performance / feel**
-- [ ] App-wide data cache so screens don't reload every visit (also fixes the Profile "0" flash).
-- [ ] Smooth Feed ↔ Swaps tab transition.
+**Batch C — performance / feel** ✅ shipped via OTA
+- [x] App-wide stale-while-revalidate cache (`utils/memoryCache`): Feed/profile lists seed every
+      post, so PostDetail/BookDetail render instantly; Inbox, Shelf (per shelf), Notifications,
+      comments and book descriptions cached; other-user profile header renders from the tapped
+      post's author. In-memory only (cleared on sign-out) — persist to disk later if cold opens need it.
+- [x] Smooth Feed ↔ Swaps: engagement batched (3 requests per tab instead of ~60), last-known
+      location instead of waiting for a fresh GPS fix, the other tab prefetched in the background,
+      and each tab keeps its own scroll position.
+- [x] Profiles "coming in from the top": `SafeAreaProvider` had no `initialMetrics`, so screens
+      rendered with 0 insets for a frame then shifted down; plus the other-user profile swapped a
+      full-screen spinner for the real layout. Both fixed (initialWindowMetrics + instant header).
 
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is

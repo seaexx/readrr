@@ -9,7 +9,7 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-import { getCached, setCached } from '../../utils/memoryCache';
+import { getCached, setCached, seedPostCache } from '../../utils/memoryCache';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
@@ -50,6 +50,7 @@ export default function ProfileScreen({ navigation }: Props) {
       const data = await getUserPosts(profile.id, 60);
       setPosts(data);
       setCached(postsCacheKey, data);
+      seedPostCache(data);
       setPostsLoaded(true);
       setError(null);
     } catch (error: any) {

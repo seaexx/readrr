@@ -6,6 +6,7 @@ import { supabase } from '../../config/supabase';
 import { WarningCircle, Envelope } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import { useAuthStore } from '../../store/authStore';
+import { getCached, setCached } from '../../utils/memoryCache';
 import { Swap } from '../../models/Swap';
 import { getReceivedSwaps, getSentSwaps, acceptSwap, declineSwap } from '../../services/swapsService';
 import Avatar from '../../components/Avatar';
@@ -23,9 +24,11 @@ export default function InboxScreen({ navigation }: Props) {
   const session = useAuthStore((state) => state.session);
 
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>(initialTab);
-  const [receivedSwaps, setReceivedSwaps] = useState<Swap[]>([]);
-  const [sentSwaps, setSentSwaps] = useState<Swap[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `inbox:${session?.user.id}`;
+  const cachedInbox = getCached<{ received: Swap[]; sent: Swap[] }>(cacheKey);
+  const [receivedSwaps, setReceivedSwaps] = useState<Swap[]>(cachedInbox?.received ?? []);
+  const [sentSwaps, setSentSwaps] = useState<Swap[]>(cachedInbox?.sent ?? []);
+  const [loading, setLoading] = useState(!cachedInbox);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -82,8 +85,11 @@ export default function InboxScreen({ navigation }: Props) {
         getBlockedUserIds(session.user.id),
       ]);
       const blockedSet = new Set(blockedIds);
-      setReceivedSwaps(received.filter((s) => !blockedSet.has(s.requester_id)));
-      setSentSwaps(sent.filter((s) => !blockedSet.has(s.owner_id)));
+      const visibleReceived = received.filter((s) => !blockedSet.has(s.requester_id));
+      const visibleSent = sent.filter((s) => !blockedSet.has(s.owner_id));
+      setReceivedSwaps(visibleReceived);
+      setSentSwaps(visibleSent);
+      setCached(cacheKey, { received: visibleReceived, sent: visibleSent });
       setError(null);
     } catch (err: any) {
       console.error('Error loading swaps:', err);
