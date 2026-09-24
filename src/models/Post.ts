@@ -13,6 +13,7 @@ export interface Post {
   post_type: PostType;
   image_url?: string;
   caption?: string;
+  description?: string | null; // book blurb, saved at post time
   condition?: Condition;
   genre?: string;
   swap_type?: SwapType;
@@ -66,6 +67,7 @@ export interface CreatePostInput {
   cover_image_url?: string | null;
   image_url?: string | null;
   caption?: string | null;
+  description?: string | null;
   condition?: Condition | null;
   genre?: string | null;
   swap_type?: SwapType | null;

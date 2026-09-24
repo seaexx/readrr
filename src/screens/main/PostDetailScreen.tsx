@@ -75,13 +75,17 @@ export default function PostDetailScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (post?.isbn) {
+    if (post?.description) {
+      // Saved with the post — show it instantly, no Google lookup
+      setDescription(post.description);
+      setDescriptionFetched(true);
+    } else if (post?.isbn) {
       fetchDescription(post.isbn);
     } else if (post) {
       // No ISBN available, mark as fetched with no description
       setDescriptionFetched(true);
     }
-  }, [post?.isbn]);
+  }, [post?.id, post?.description]);
 
   useEffect(() => {
     if (post && session?.user.id) {
@@ -163,6 +167,15 @@ export default function PostDetailScreen({ navigation }: Props) {
       console.log('📖 Book info received:', bookInfo.title, '| Description:', bookInfo.description ? 'YES' : 'NO');
       if (bookInfo.description) {
         setDescription(bookInfo.description);
+        // Older posts predate saving the description; the owner's view backfills
+        // it (RLS allows updating your own post) so later opens are instant.
+        if (post && post.user_id === session?.user.id) {
+          supabase
+            .from('posts')
+            .update({ description: bookInfo.description })
+            .eq('id', post.id)
+            .then(() => {}, () => {});
+        }
       }
     } catch (error: any) {
       console.log('❌ Could not fetch description:', error.message);

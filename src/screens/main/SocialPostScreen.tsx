@@ -50,6 +50,7 @@ export default function SocialPostScreen({ navigation }: Props) {
         title: book.title,
         author: book.author,
         cover_image_url: book.cover_image_url,
+        description: book.description ?? null,
         caption: caption || null,
       });
 

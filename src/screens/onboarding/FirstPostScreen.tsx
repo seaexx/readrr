@@ -30,6 +30,7 @@ export default function FirstPostScreen({ navigation }: Props) {
         author: bookInfo.author,
         isbn: bookInfo.isbn,
         cover_image_url: bookInfo.cover_image_url,
+        description: bookInfo.description ?? null,
       });
 
       if (error) throw error;
