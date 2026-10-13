@@ -83,6 +83,16 @@ WITH checks AS (
          EXISTS (SELECT 1 FROM pg_class
                  WHERE relname = 'shelf_items' AND relnamespace = 'public'::regnamespace
                    AND relrowsecurity = true)
+  UNION ALL
+
+  -- 021: active-only swap uniqueness + atomic completion RPC
+  SELECT '021_swap_completion', 'ux_swaps_active_request index',
+         to_regclass('public.ux_swaps_active_request') IS NOT NULL
+  UNION ALL
+  SELECT '021_swap_completion', 'confirm_swap_complete() function',
+         EXISTS (SELECT 1 FROM pg_proc
+                 WHERE proname = 'confirm_swap_complete'
+                   AND pronamespace = 'public'::regnamespace)
 )
 SELECT
   migration,

@@ -102,6 +102,10 @@ npm install
 # supabase/migrations/015_nearby_feed.sql
 # supabase/migrations/016_account_deletion.sql
 # supabase/migrations/017_shelf.sql
+# supabase/migrations/018_wishlist_match.sql
+# supabase/migrations/019_post_integrity.sql
+# supabase/migrations/020_realtime_publication.sql
+# supabase/migrations/021_swap_completion.sql
 # Optional seed for testing nearby feed (run manually, not a migration):
 # supabase/seed_nearby.sql
 

@@ -159,53 +159,16 @@ export async function cancelSwap(swapId: string): Promise<void> {
   if (error) throw error;
 }
 
-// Mark swap as complete (for one user)
-export async function confirmSwapComplete(
-  swapId: string,
-  userId: string,
-  isOwner: boolean
-): Promise<{ bothConfirmed: boolean }> {
-  // First update the confirmation field
-  const updateField = isOwner ? 'owner_confirmed_complete' : 'requester_confirmed_complete';
+// Confirm the current user's side of a swap. The DB works out which side the
+// caller is on, and completes the swap + marks the post swapped atomically
+// once both have confirmed (021_swap_completion.sql).
+export async function confirmSwapComplete(swapId: string): Promise<{ bothConfirmed: boolean }> {
+  const { data, error } = await supabase.rpc('confirm_swap_complete', {
+    swap_uuid: swapId,
+  });
 
-  const { error: updateError } = await supabase
-    .from('swaps')
-    .update({ [updateField]: true })
-    .eq('id', swapId);
-
-  if (updateError) throw updateError;
-
-  // Check if both have confirmed
-  const { data: swap, error: fetchError } = await supabase
-    .from('swaps')
-    .select('requester_confirmed_complete, owner_confirmed_complete, requester_id, owner_id, post_id')
-    .eq('id', swapId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const bothConfirmed = swap.requester_confirmed_complete && swap.owner_confirmed_complete;
-
-  if (bothConfirmed) {
-    // Update swap status to completed
-    await supabase
-      .from('swaps')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', swapId);
-
-    // total_swaps is incremented by DB trigger (009_total_swaps_trigger.sql)
-
-    // Update post availability to 'swapped'
-    await supabase
-      .from('posts')
-      .update({ availability: 'swapped' })
-      .eq('id', swap.post_id);
-  }
-
-  return { bothConfirmed };
+  if (error) throw error;
+  return { bothConfirmed: data === true };
 }
 
 // Check if user has pending swap request for a post
