@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Readrr · Swap books with readers near you</title>
+  <meta name="description" content="Readrr is a book-swapping app for local readers. Scan a book, list it, and swap it in person somewhere public. The iPhone beta is open: email support@readrr.app to join." />
+  <meta property="og:title" content="Readrr · Pass the book on" />
+  <meta property="og:description" content="Swap books with readers near you. The iPhone beta is open." />
+  <meta property="og:image" content="https://readrr.app/og.png" />
+  <meta property="og:url" content="https://readrr.app/" />
+  <meta name="theme-color" content="#FAF7F1" />
+  <link rel="icon" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #FAF7F1;
+      --ink: #15181D;
+      --muted: #5C6168;
+      --rule: #DCD6CA;
+      --brand: #38B6FF;      /* app primary: numerals, button fill */
+      --brand-ink: #0A6497;  /* readable blue for links on paper */
+      --serif: "Fraunces", Georgia, "Times New Roman", serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    a { color: var(--brand-ink); text-underline-offset: 3px; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    .label {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Masthead */
+    .mast {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-block: 28px; border-bottom: 1px solid var(--rule);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+    .brand img { height: 34px; width: auto; }
+    .brand span { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+    .status { display: inline-flex; align-items: center; gap: 8px; }
+    .status::before {
+      content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--brand);
+    }
+
+    /* Opening */
+    .open { padding-block: 88px 72px; display: grid; grid-template-columns: 1fr; gap: 28px; }
+    h1 {
+      margin: 0;
+      font-size: clamp(52px, 10vw, 112px);
+      line-height: 0.95;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      font-variation-settings: "opsz" 144;
+    }
+    h1 em { font-weight: 400; color: var(--muted); display: block; font-size: 0.52em; letter-spacing: -0.02em; margin-top: 18px; }
+    .lede { max-width: 34em; font-size: 20px; margin: 0; }
+    .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+    .btn {
+      display: inline-block;
+      background: var(--brand); color: var(--ink);
+      font-family: var(--mono); font-weight: 500; font-size: 15px;
+      padding: 16px 22px; border-radius: 6px; text-decoration: none;
+      border: 1.5px solid var(--ink);
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform .12s, box-shadow .12s;
+    }
+    .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+    .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+    .btn:focus-visible { outline: 3px solid var(--brand-ink); outline-offset: 3px; }
+    .plain { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+
+    /* The journey */
+    .journey-head { display: flex; justify-content: space-between; align-items: baseline; border-top: 2px solid var(--ink); padding-top: 14px; }
+    .steps { list-style: none; margin: 0 0 24px; padding: 0; }
+    .step {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 0 32px;
+      padding: 36px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .num {
+      font-size: 96px; line-height: 0.8; font-weight: 600;
+      color: var(--brand);
+      font-variation-settings: "opsz" 144;
+      letter-spacing: -0.04em;
+    }
+    .step h2 { margin: 0 0 6px; font-size: 32px; line-height: 1.15; font-weight: 600; letter-spacing: -0.015em; }
+    .step p { margin: 0 0 12px; max-width: 36em; }
+    .step .label { color: var(--brand-ink); }
+
+    /* Between swaps */
+    .between { display: grid; grid-template-columns: 150px 1fr; gap: 0 32px; padding-block: 64px; }
+    .between h2 { grid-column: 2; margin: 0 0 24px; font-size: 32px; font-weight: 600; letter-spacing: -0.015em; }
+    .between dl { grid-column: 2; margin: 0; display: grid; grid-template-columns: 11em 1fr; gap: 18px 24px; }
+    .between dt { font-family: var(--mono); font-size: 14px; padding-top: 4px; }
+    .between dd { margin: 0; }
+
+    /* Join */
+    .join { background: var(--ink); color: var(--paper); padding-block: 72px; }
+    .join .label { color: #A3A8AF; }
+    .join h2 { margin: 10px 0 28px; font-size: clamp(36px, 6vw, 60px); line-height: 1.02; font-weight: 600; letter-spacing: -0.03em; }
+    .join ol { margin: 0 0 36px; padding-left: 1.4em; max-width: 34em; }
+    .join li { margin-bottom: 10px; }
+    .join li::marker { font-family: var(--mono); color: var(--brand); }
+    .join a:not(.btn) { color: var(--brand); }
+    .join .btn { border-color: var(--paper); box-shadow: 3px 3px 0 var(--paper); }
+    .join .btn:hover { box-shadow: 4px 4px 0 var(--paper); }
+    .join .btn:active { box-shadow: 1px 1px 0 var(--paper); }
+    .join .note { margin-top: 28px; color: #A3A8AF; font-size: 16px; max-width: 34em; }
+
+    footer { padding-block: 28px 40px; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+    footer nav a { margin-left: 18px; font-family: var(--mono); font-size: 13px; }
+    footer nav a:first-child { margin-left: 0; }
+
+    @media (max-width: 680px) {
+      body { font-size: 17px; }
+      .open { padding-block: 56px 48px; }
+      .step, .between { grid-template-columns: 1fr; }
+      .num { font-size: 64px; margin-bottom: 14px; }
+      .step h2, .between h2 { font-size: 27px; }
+      .between h2, .between dl { grid-column: 1; }
+      .between dl { grid-template-columns: 1fr; gap: 4px; }
+      .between dd { margin-bottom: 16px; }
+      .status-text { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap mast">
+    <a class="brand" href="/" aria-label="Readrr home">
+      <img src="/logo.png" alt="" width="22" height="34" />
+      <span>readrr</span>
+    </a>
+    <span class="label status"><span class="status-text">iPhone beta · </span>open now</span>
+  </header>
+
+  <main>
+    <section class="wrap open">
+      <h1>Pass the book on.<em>Swap with readers near you.</em></h1>
+      <p class="lede">Readrr is for the books you've finished and the ones you're hunting for. List what's on your shelf, find what's nearby, and swap in person somewhere public.</p>
+      <div class="cta-row">
+        <a class="btn" href="mailto:support@readrr.app?subject=Readrr%20beta%20%E2%80%94%20count%20me%20in&amp;body=Hi%20Readrr%2C%0A%0AI%27d%20like%20to%20test%20the%20app%20on%20iPhone.%0A%0AMy%20Apple%20ID%20email%20(for%20the%20TestFlight%20invite)%3A%20%0AWhere%20I%27m%20based%3A%20">Email to join the beta →</a>
+        <span class="plain">support@readrr.app</span>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="journey">
+      <div class="journey-head">
+        <span class="label" id="journey">One book, start to finish</span>
+        <span class="label">06 steps</span>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <div class="num" aria-hidden="true">01</div>
+          <div>
+            <h2>Scan it</h2>
+            <p>Point your camera at the barcode on the back. The title, author and cover fill in for you, or you can search by title or author instead.</p>
+            <span class="label">Barcode · title · author</span>
+          </div>
+        </li>
+        <li class="step">
+          <div class="num" aria-hidden="true">02</div>
+          <div>
+            <h2>List it</h2>
+            <p>Say whether it's a trade, a loan or a gift, note the condition and add a photo. It shows up for readers within 25 miles.</p>
+            <span class="label">Trade · borrow · gift</span>
+          </div>
+        </li>
+        <li class="step">
+          <div class="num" aria-hidden="true">03</div>
+          <div>
+            <h2>Ask for it</h2>
+            <p>See something you want? Send a request with a short note. The owner accepts or declines from their inbox.</p>
+            <span class="label">Requests · inbox</span>
+          </div>
+        </li>
+        <li class="step">
+          <div class="num" aria-hidden="true">04</div>
+          <div>
+            <h2>Talk it through</h2>
+            <p>Once a request is accepted, a chat opens between the two of you to sort out the details.</p>
+            <span class="label">Real-time chat</span>
+          </div>
+        </li>
+        <li class="step">
+          <div class="num" aria-hidden="true">05</div>
+          <div>
+            <h2>Meet somewhere public</h2>
+            <p>Suggest a café, library, bookshop or community space from real places nearby. When you both agree, the spot stays pinned to the top of the chat.</p>
+            <span class="label">Café · library · bookshop</span>
+          </div>
+        </li>
+        <li class="step">
+          <div class="num" aria-hidden="true">06</div>
+          <div>
+            <h2>Close the loop</h2>
+            <p>You both confirm the swap happened, then rate each other. Ratings show on profiles, so you know who you're meeting next time.</p>
+            <span class="label">Confirm · rate</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="wrap between" aria-labelledby="between">
+      <h2 id="between">Between swaps</h2>
+      <dl>
+        <dt>The feed</dt>
+        <dd>Share what you're reading, what you just finished and what you'd recommend. Like and comment on other readers' posts.</dd>
+        <dt>Your shelf</dt>
+        <dd>Keep track of books you want to read, are reading, and have finished.</dd>
+        <dt>Wishlist alerts</dt>
+        <dd>Get a nudge when someone nearby lists a book from your want-to-read shelf.</dd>
+        <dt>Block &amp; report</dt>
+        <dd>Block anyone, which hides their posts and stops swaps and messages, or report a person or post.</dd>
+      </dl>
+    </section>
+
+    <section class="join" aria-labelledby="join">
+      <div class="wrap">
+        <span class="label">Join the beta</span>
+        <h2 id="join">Help us test it<br />before everyone else.</h2>
+        <ol>
+          <li>Email <a href="mailto:support@readrr.app">support@readrr.app</a> with the Apple ID email you use on your iPhone.</li>
+          <li>We'll send you a TestFlight invite, Apple's app for trying apps before release.</li>
+          <li>Open the invite on your iPhone, install Readrr, and tell us what breaks.</li>
+        </ol>
+        <a class="btn" href="mailto:support@readrr.app?subject=Readrr%20beta%20%E2%80%94%20count%20me%20in&amp;body=Hi%20Readrr%2C%0A%0AI%27d%20like%20to%20test%20the%20app%20on%20iPhone.%0A%0AMy%20Apple%20ID%20email%20(for%20the%20TestFlight%20invite)%3A%20%0AWhere%20I%27m%20based%3A%20">Email to join the beta →</a>
+        <p class="note">On Android? The beta is iPhone only for now. Email us anyway and we'll tell you when Android is ready.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span class="label">© 2026 Readrr</span>
+      <nav>
+        <a href="/terms/">Terms</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="mailto:support@readrr.app">Contact</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
