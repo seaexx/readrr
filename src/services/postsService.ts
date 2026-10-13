@@ -3,8 +3,6 @@ import { Post, CreatePostInput } from '../models/Post';
 import { notifyWishlistMatches } from './wishlistService';
 
 export async function createPost(data: CreatePostInput): Promise<Post> {
-  console.log('💾 postsService.createPost data:', JSON.stringify(data, null, 2));
-
   const { data: post, error } = await supabase
     .from('posts')
     .insert(data)
@@ -15,8 +13,6 @@ export async function createPost(data: CreatePostInput): Promise<Post> {
     console.log('❌ createPost error:', error);
     throw error;
   }
-
-  console.log('✅ Post created:', JSON.stringify(post, null, 2));
 
   // Fire-and-forget: alert nearby readers who have this book on their wishlist.
   if (post?.post_type === 'swap' && data.location) {

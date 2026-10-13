@@ -35,19 +35,23 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
   const handleBarcodeScanned = async (isbn: string) => {
     setMode('choice');
     setLookingUp(true);
+    // Never dead-end: offer to search by title (and the Back/options stay visible).
+    const offerSearch = (title: string, message: string) =>
+      Alert.alert(title, message, [
+        { text: 'Search by title', onPress: () => setMode('search') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+
     try {
       const book = await fetchBookByISBN(isbn);
-      onSelect(book);
-    } catch {
-      // Never dead-end: offer to search by title (and the Back/options stay visible).
-      Alert.alert(
-        'Book not found',
-        "We couldn't find that barcode. Try searching by title instead.",
-        [
-          { text: 'Search by title', onPress: () => setMode('search') },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+      if (book) {
+        onSelect(book);
+      } else {
+        offerSearch('Book not found', "We couldn't find that barcode. Try searching by title instead.");
+      }
+    } catch (error: any) {
+      console.log('ISBN lookup failed:', error?.message);
+      offerSearch('Lookup failed', "We couldn't reach the book database. Try again, or search by title.");
     } finally {
       setLookingUp(false);
     }
