@@ -237,11 +237,7 @@ export default function ChatScreen({ navigation }: Props) {
           onPress: async () => {
             setCompleting(true);
             try {
-              const { bothConfirmed } = await confirmSwapComplete(
-                swapId,
-                session.user.id,
-                isOwner
-              );
+              const { bothConfirmed } = await confirmSwapComplete(swapId);
 
               if (bothConfirmed) {
                 const alreadyRated = await hasRated(swapId, session.user.id);
