@@ -163,9 +163,9 @@ export default function PostDetailScreen({ navigation }: Props) {
     setLoadingDescription(true);
     try {
       const bookInfo = await fetchBookByISBN(isbn);
-      setCached(`description:${isbn}`, bookInfo.description ?? null);
-      console.log('📖 Book info received:', bookInfo.title, '| Description:', bookInfo.description ? 'YES' : 'NO');
-      if (bookInfo.description) {
+      setCached(`description:${isbn}`, bookInfo?.description ?? null);
+      console.log('📖 Book info received:', bookInfo?.title, '| Description:', bookInfo?.description ? 'YES' : 'NO');
+      if (bookInfo?.description) {
         setDescription(bookInfo.description);
         // Older posts predate saving the description; the owner's view backfills
         // it (RLS allows updating your own post) so later opens are instant.

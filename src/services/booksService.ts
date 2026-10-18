@@ -1,7 +1,7 @@
 // Books lookup service — Google Books API.
 //
 // Requires EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY (set in .env.local for local dev and
-// in eas.json `env` for builds). A key gives dedicated quota, so lookups are
+// in the EAS project's environment variables for builds). A key gives dedicated quota, so lookups are
 // reliable — the previous keyless/Open-Library path returned frequent misses.
 
 export interface BookInfo {
@@ -90,9 +90,10 @@ function toBookInfo(item: any): BookInfo {
   };
 }
 
-// Look up a single book by ISBN (from a barcode scan). Throws a friendly error
-// if nothing matches or lookup is unavailable.
-export async function fetchBookByISBN(rawIsbn: string): Promise<BookInfo> {
+// Look up a single book by ISBN (from a barcode scan). Returns null when Google
+// has no volume for the ISBN; throws when the lookup itself failed, so callers
+// can tell a genuine miss apart from an outage or quota error.
+export async function fetchBookByISBN(rawIsbn: string): Promise<BookInfo | null> {
   const isbn = normalizeIsbn(rawIsbn);
   const key = getApiKey();
   if (!key) {
@@ -100,11 +101,12 @@ export async function fetchBookByISBN(rawIsbn: string): Promise<BookInfo> {
   }
 
   const response = await fetchWithTimeout(`${GOOGLE_BOOKS_API}?q=isbn:${isbn}&key=${key}`);
+  if (!response.ok) {
+    throw new Error(`Book lookup failed (HTTP ${response.status}).`);
+  }
   const json = await response.json();
 
-  if (!json?.items?.length) {
-    throw new Error('Book not found. Try searching by title instead.');
-  }
+  if (!json?.items?.length) return null;
   return toBookInfo(json.items[0]);
 }
 
