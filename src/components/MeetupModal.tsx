@@ -15,6 +15,7 @@ import {
 import * as Location from 'expo-location';
 import { Coffee, Books, Storefront, Martini, UsersThree, Buildings, MapPin, MagnifyingGlass, X, IconProps } from 'phosphor-react-native';
 import { fonts } from '../theme/fonts';
+import { useThemeColors } from '../theme/colors';
 import { proposeMeetup } from '../services/swapsService';
 import { VenueCategory } from '../models/Swap';
 
@@ -72,6 +73,7 @@ export default function MeetupModal({
   onDone,
   onCancel,
 }: Props) {
+  const ink = useThemeColors();
   const [selectedCategory, setSelectedCategory] = useState<VenueCategory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [nearbyResults, setNearbyResults] = useState<VenueResult[]>([]);
@@ -278,23 +280,23 @@ export default function MeetupModal({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: ink.hairline,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
       }}
     >
       {item.source === 'overpass' ? (
-        <MapPin size={16} color="#6b7280" weight="regular" />
+        <MapPin size={16} color={ink.muted} weight="regular" />
       ) : (
-        <MagnifyingGlass size={16} color="#6b7280" weight="regular" />
+        <MagnifyingGlass size={16} color={ink.muted} weight="regular" />
       )}
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: '500', color: '#1f2937' }}>
+        <Text style={{ fontSize: 15, fontWeight: '500', color: ink.strong }}>
           {item.name}
         </Text>
         {item.address ? (
-          <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }} numberOfLines={1}>
+          <Text style={{ fontSize: 12, color: ink.muted, marginTop: 1 }} numberOfLines={1}>
             {item.address}
           </Text>
         ) : null}
@@ -310,7 +312,7 @@ export default function MeetupModal({
       >
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: ink.isDark ? '#111827' : '#fff',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 12,
@@ -323,7 +325,7 @@ export default function MeetupModal({
             style={{
               width: 40,
               height: 4,
-              backgroundColor: '#d1d5db',
+              backgroundColor: ink.border,
               borderRadius: 2,
               alignSelf: 'center',
               marginBottom: 16,
@@ -340,15 +342,15 @@ export default function MeetupModal({
               marginBottom: 6,
             }}
           >
-            <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold }}>
+            <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold, color: ink.heading }}>
               {isCounterProposal ? 'Suggest somewhere different' : 'Suggest a meetup spot'}
             </Text>
             <TouchableOpacity onPress={handleCancel}>
-              <Text style={{ fontSize: 15, color: '#6b7280' }}>Cancel</Text>
+              <Text style={{ fontSize: 15, color: ink.muted }}>Cancel</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={{ fontSize: 14, color: '#6b7280', paddingHorizontal: 20, marginBottom: 14 }}>
+          <Text style={{ fontSize: 14, color: ink.muted, paddingHorizontal: 20, marginBottom: 14 }}>
             Pick a safe public place to exchange your books.
           </Text>
 
@@ -373,17 +375,17 @@ export default function MeetupModal({
                     paddingVertical: 8,
                     borderRadius: 999,
                     borderWidth: 1.5,
-                    borderColor: active ? chip.color : '#e5e7eb',
-                    backgroundColor: active ? chip.color + '18' : '#f9fafb',
+                    borderColor: active ? chip.color : ink.border,
+                    backgroundColor: active ? chip.color + '18' : ink.surface,
                     gap: 6,
                   }}
                 >
-                  <ChipIcon size={16} color={active ? chip.color : '#374151'} weight="regular" />
+                  <ChipIcon size={16} color={active ? chip.color : ink.body} weight="regular" />
                   <Text
                     style={{
                       fontSize: 14,
                       fontWeight: active ? '600' : '400',
-                      color: active ? chip.color : '#374151',
+                      color: active ? chip.color : ink.body,
                     }}
                   >
                     {chip.label}
@@ -399,25 +401,25 @@ export default function MeetupModal({
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: '#f3f4f6',
+                backgroundColor: ink.surface,
                 borderRadius: 12,
                 paddingHorizontal: 14,
                 paddingVertical: 10,
               }}
             >
-              <MagnifyingGlass size={16} color="#9ca3af" weight="regular" style={{ marginRight: 8 }} />
+              <MagnifyingGlass size={16} color={ink.subtle} weight="regular" style={{ marginRight: 8 }} />
               <TextInput
                 value={searchQuery}
                 onChangeText={handleQueryChange}
                 placeholder={selectedCategory ? 'Search by name...' : 'Select a category first, then search...'}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={ink.subtle}
                 autoCorrect={false}
-                style={{ flex: 1, fontSize: 16, color: '#1f2937' }}
+                style={{ flex: 1, fontSize: 16, color: ink.strong }}
               />
-              {(searching) && <ActivityIndicator size="small" color="#9ca3af" />}
+              {(searching) && <ActivityIndicator size="small" color={ink.subtle} />}
               {searchQuery.length > 0 && !searching && (
                 <TouchableOpacity onPress={() => handleQueryChange('')}>
-                  <X size={16} color="#9ca3af" weight="regular" />
+                  <X size={16} color={ink.subtle} weight="regular" />
                 </TouchableOpacity>
               )}
             </View>
@@ -429,13 +431,13 @@ export default function MeetupModal({
               {isLoadingResults ? (
                 <View style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <ActivityIndicator size="small" color="#38B6FF" />
-                  <Text style={{ fontSize: 14, color: '#6b7280' }}>
+                  <Text style={{ fontSize: 14, color: ink.muted }}>
                     {searchQuery.trim() ? 'Searching...' : 'Finding nearby spots...'}
                   </Text>
                 </View>
               ) : resultsToShow.length > 0 ? (
                 <>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#6b7280', paddingHorizontal: 20, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: ink.muted, paddingHorizontal: 20, marginBottom: 4 }}>
                     {resultsLabel}
                   </Text>
                   <FlatList
@@ -447,11 +449,11 @@ export default function MeetupModal({
                   />
                 </>
               ) : hasSearched && searchQuery.trim() ? (
-                <Text style={{ fontSize: 13, color: '#9ca3af', paddingHorizontal: 20, marginBottom: 8 }}>
+                <Text style={{ fontSize: 13, color: ink.subtle, paddingHorizontal: 20, marginBottom: 8 }}>
                   No results — enter the venue name manually below.
                 </Text>
               ) : locationDenied && !searchQuery.trim() ? (
-                <Text style={{ fontSize: 13, color: '#9ca3af', paddingHorizontal: 20, marginBottom: 8 }}>
+                <Text style={{ fontSize: 13, color: ink.subtle, paddingHorizontal: 20, marginBottom: 8 }}>
                   Location access denied. Search by name or type it manually.
                 </Text>
               ) : null}
@@ -460,21 +462,21 @@ export default function MeetupModal({
 
           {/* Manual entry */}
           <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>
+            <Text style={{ fontSize: 13, color: ink.muted, marginBottom: 6 }}>
               {selectedVenue ? 'Selected venue name:' : 'Or enter venue name manually:'}
             </Text>
             <TextInput
               value={customVenueName}
               onChangeText={(t) => { setCustomVenueName(t); if (selectedVenue) setSelectedVenue(null); }}
               placeholder="e.g. Central Library, The Book Nook..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={ink.subtle}
               style={{
-                backgroundColor: '#f3f4f6',
+                backgroundColor: ink.surface,
                 borderRadius: 12,
                 paddingHorizontal: 14,
                 paddingVertical: 10,
                 fontSize: 15,
-                color: '#1f2937',
+                color: ink.strong,
                 borderWidth: selectedVenue ? 1.5 : 0,
                 borderColor: '#86efac',
               }}
@@ -487,7 +489,7 @@ export default function MeetupModal({
               onPress={handleSubmit}
               disabled={!canSubmit || submitting}
               style={{
-                backgroundColor: canSubmit ? '#38B6FF' : '#d1d5db',
+                backgroundColor: canSubmit ? '#38B6FF' : ink.border,
                 borderRadius: 14,
                 paddingVertical: 16,
                 alignItems: 'center',

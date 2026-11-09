@@ -66,12 +66,12 @@ export default function CommentItem({ comment, onDelete }: Props) {
       <View className="ml-3 flex-1">
         <View className="flex-row items-center mb-1">
           <TouchableOpacity onPress={handleUserPress}>
-            <Text className="font-semibold mr-2">@{comment.user?.username}</Text>
+            <Text className="font-semibold mr-2 text-black dark:text-white">@{comment.user?.username}</Text>
           </TouchableOpacity>
-          <Text className="text-gray-500 text-xs">{timeAgo(comment.created_at)}</Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-xs">{timeAgo(comment.created_at)}</Text>
         </View>
 
-        <Text className="text-gray-800">{comment.content}</Text>
+        <Text className="text-gray-800 dark:text-gray-200">{comment.content}</Text>
 
         {isOwn && (
           <TouchableOpacity onPress={handleDelete} className="mt-1">

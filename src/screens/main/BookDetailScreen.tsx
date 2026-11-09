@@ -12,6 +12,7 @@ import { promptSaveToShelf } from '../../utils/shelfPrompt';
 import { getCachedPost, seedPostCache } from '../../utils/memoryCache';
 import { isOnShelf } from '../../services/shelfService';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 import Avatar from '../../components/Avatar';
 import BookCover from '../../components/BookCover';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function BookDetailScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const route = useRoute();
   const { postId } = route.params as { postId: string };
   const session = useAuthStore((state) => state.session);
@@ -161,7 +163,7 @@ export default function BookDetailScreen({ navigation }: Props) {
   const hasCoverUrl = !!post.cover_image_url;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
       <ScrollView>
         {/* Header */}
         <View className="flex-row items-center px-4 py-3">
@@ -176,7 +178,7 @@ export default function BookDetailScreen({ navigation }: Props) {
           <View className="flex-row justify-center px-4 py-2" style={{ gap: 12 }}>
             {/* Book Cover */}
             <View>
-              <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Book Cover</Text>
+              <Text style={{ fontSize: 13, color: ink.muted, marginBottom: 6 }}>Book Cover</Text>
               <BookCover
                 coverUrl={post.cover_image_url}
                 width={IMAGE_WIDTH}
@@ -186,7 +188,7 @@ export default function BookDetailScreen({ navigation }: Props) {
             </View>
             {/* User's Photo */}
             <View>
-              <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Actual Book</Text>
+              <Text style={{ fontSize: 13, color: ink.muted, marginBottom: 6 }}>Actual Book</Text>
               <Image
                 source={{ uri: post.image_url! }}
                 style={{ width: IMAGE_WIDTH, height: IMAGE_WIDTH * 1.4, borderRadius: 8 }}
@@ -204,14 +206,14 @@ export default function BookDetailScreen({ navigation }: Props) {
         ) : (
           // Only a book cover — center it at natural 2:3 proportions on a soft
           // backdrop instead of stretching it full-bleed (which distorts it).
-          <View style={{ backgroundColor: '#f3f4f6', paddingVertical: 28, alignItems: 'center' }}>
+          <View style={{ backgroundColor: ink.hairline, paddingVertical: 28, alignItems: 'center' }}>
             <View
               style={{
                 borderRadius: 10,
-                backgroundColor: '#fff',
+                backgroundColor: ink.isDark ? '#1f2937' : '#fff',
                 shadowColor: '#1e293b',
                 shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.18,
+                shadowOpacity: ink.isDark ? 0.4 : 0.18,
                 shadowRadius: 12,
                 elevation: 5,
               }}
@@ -228,23 +230,23 @@ export default function BookDetailScreen({ navigation }: Props) {
 
         {/* Book Info */}
         <View className="px-6 py-4">
-          <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 4 }}>{post.title}</Text>
+          <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: ink.heading, marginBottom: 4 }}>{post.title}</Text>
           {post.author && (
-            <Text style={{ fontSize: 17, color: '#4b5563', marginBottom: 16 }}>{post.author}</Text>
+            <Text style={{ fontSize: 17, color: ink.secondary, marginBottom: 16 }}>{post.author}</Text>
           )}
 
           {/* Tags */}
           <View className="flex-row flex-wrap mb-4">
             {post.condition && (
-              <View className="bg-gray-100 px-3 py-1.5 rounded-full mr-2 mb-2">
-                <Text style={{ fontSize: 15, color: '#374151' }} className="capitalize">
+              <View className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full mr-2 mb-2">
+                <Text style={{ fontSize: 15, color: ink.body }} className="capitalize">
                   {post.condition.replace('_', ' ')}
                 </Text>
               </View>
             )}
             {post.genre && (
-              <View className="bg-gray-100 px-3 py-1.5 rounded-full mr-2 mb-2">
-                <Text style={{ fontSize: 15, color: '#374151' }}>{post.genre}</Text>
+              <View className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full mr-2 mb-2">
+                <Text style={{ fontSize: 15, color: ink.body }}>{post.genre}</Text>
               </View>
             )}
             {post.swap_type && (
@@ -258,20 +260,20 @@ export default function BookDetailScreen({ navigation }: Props) {
           <View
             className={`px-4 py-3 rounded-lg mb-6 ${
               post.availability === 'available'
-                ? 'bg-green-100'
+                ? 'bg-green-100 dark:bg-green-950'
                 : post.availability === 'pending'
-                ? 'bg-yellow-100'
-                : 'bg-gray-100'
+                ? 'bg-yellow-100 dark:bg-yellow-950'
+                : 'bg-gray-100 dark:bg-gray-800'
             }`}
           >
             <Text
               style={{ fontSize: 15, fontWeight: '600' }}
               className={
                 post.availability === 'available'
-                  ? 'text-green-700'
+                  ? 'text-green-700 dark:text-green-300'
                   : post.availability === 'pending'
-                  ? 'text-yellow-700'
-                  : 'text-gray-700'
+                  ? 'text-yellow-700 dark:text-yellow-300'
+                  : 'text-gray-700 dark:text-gray-300'
               }
             >
               {post.availability === 'available'
@@ -283,10 +285,10 @@ export default function BookDetailScreen({ navigation }: Props) {
           </View>
 
           {/* Owner */}
-          <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Posted by</Text>
+          <Text style={{ fontSize: 14, color: ink.muted, marginBottom: 8 }}>Posted by</Text>
           <TouchableOpacity
             onPress={handleUserPress}
-            className="flex-row items-center bg-gray-50 rounded-xl p-4 mb-6"
+            className="flex-row items-center bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6"
           >
             <Avatar
               avatarUrl={post.user?.avatar_url}
@@ -294,19 +296,19 @@ export default function BookDetailScreen({ navigation }: Props) {
               size={50}
             />
             <View className="ml-4 flex-1">
-              <Text style={{ fontSize: 17, fontWeight: '600' }}>@{post.user?.username}</Text>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: ink.heading }}>@{post.user?.username}</Text>
               {(post.user as any)?.city && (
-                <Text style={{ fontSize: 15, color: '#6b7280' }}>{(post.user as any).city}</Text>
+                <Text style={{ fontSize: 15, color: ink.muted }}>{(post.user as any).city}</Text>
               )}
             </View>
-            <Text style={{ fontSize: 18, color: '#9ca3af' }}>→</Text>
+            <Text style={{ fontSize: 18, color: ink.subtle }}>→</Text>
           </TouchableOpacity>
 
           {/* Request Swap Button */}
           {!isOwnPost && post.availability === 'available' && (
             checkingSwap ? (
-              <View className="bg-gray-200 py-4 rounded-xl">
-                <Text style={{ fontSize: 17, color: '#6b7280', textAlign: 'center' }}>
+              <View className="bg-gray-200 dark:bg-gray-700 py-4 rounded-xl">
+                <Text style={{ fontSize: 17, color: ink.muted, textAlign: 'center' }}>
                   Checking...
                 </Text>
               </View>
@@ -320,8 +322,8 @@ export default function BookDetailScreen({ navigation }: Props) {
                 </Text>
               </TouchableOpacity>
             ) : (
-              <View className="bg-yellow-100 py-4 rounded-xl">
-                <Text style={{ fontSize: 15, color: '#92400e', textAlign: 'center' }}>
+              <View className="bg-yellow-100 dark:bg-yellow-950 py-4 rounded-xl">
+                <Text style={{ fontSize: 15, color: ink.isDark ? '#fcd34d' : '#92400e', textAlign: 'center' }}>
                   Swap request already sent
                 </Text>
               </View>
@@ -329,24 +331,24 @@ export default function BookDetailScreen({ navigation }: Props) {
           )}
 
           {!isOwnPost && post.availability === 'pending' && (
-            <View className="bg-yellow-100 py-4 rounded-xl">
-              <Text style={{ fontSize: 15, color: '#92400e', textAlign: 'center' }}>
+            <View className="bg-yellow-100 dark:bg-yellow-950 py-4 rounded-xl">
+              <Text style={{ fontSize: 15, color: ink.isDark ? '#fcd34d' : '#92400e', textAlign: 'center' }}>
                 Swap in progress
               </Text>
             </View>
           )}
 
           {!isOwnPost && post.availability === 'swapped' && (
-            <View className="bg-gray-100 py-4 rounded-xl">
-              <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center' }}>
+            <View className="bg-gray-100 dark:bg-gray-800 py-4 rounded-xl">
+              <Text style={{ fontSize: 15, color: ink.muted, textAlign: 'center' }}>
                 No longer available
               </Text>
             </View>
           )}
 
           {isOwnPost && (
-            <View className="bg-gray-100 py-4 rounded-xl">
-              <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center' }}>This is your post</Text>
+            <View className="bg-gray-100 dark:bg-gray-800 py-4 rounded-xl">
+              <Text style={{ fontSize: 15, color: ink.muted, textAlign: 'center' }}>This is your post</Text>
             </View>
           )}
 
@@ -362,9 +364,9 @@ export default function BookDetailScreen({ navigation }: Props) {
                   cover_image_url: post.cover_image_url,
                 }, () => setSaved(true), { postId: post.id, alreadySaved: saved })
               }
-              className={`py-4 rounded-xl mt-3 ${saved ? 'bg-green-50 border border-green-200' : 'border border-primary'}`}
+              className={`py-4 rounded-xl mt-3 ${saved ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800' : 'border border-primary'}`}
             >
-              <Text style={{ fontSize: 17, fontWeight: '600', color: saved ? '#15803d' : '#38B6FF', textAlign: 'center' }}>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: saved ? (ink.isDark ? '#86efac' : '#15803d') : '#38B6FF', textAlign: 'center' }}>
                 {saved ? '✓ Saved to My Shelf' : 'Save to My Shelf'}
               </Text>
             </TouchableOpacity>
@@ -383,15 +385,15 @@ export default function BookDetailScreen({ navigation }: Props) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1 justify-end bg-black/50"
         >
-          <View className="bg-white rounded-t-3xl px-6 pt-6 pb-10">
+          <View className="bg-white dark:bg-gray-900 rounded-t-3xl px-6 pt-6 pb-10">
             <View className="flex-row justify-between items-center mb-4">
-              <Text style={{ fontSize: 20, fontWeight: '700' }}>Request Swap</Text>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: ink.heading }}>Request Swap</Text>
               <TouchableOpacity onPress={() => setShowSwapModal(false)}>
-                <Text style={{ fontSize: 16, color: '#6b7280' }}>Cancel</Text>
+                <Text style={{ fontSize: 16, color: ink.muted }}>Cancel</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={{ fontSize: 15, color: '#6b7280', marginBottom: 16 }}>
+            <Text style={{ fontSize: 15, color: ink.muted, marginBottom: 16 }}>
               Send a message with your request to @{post?.user?.username} (optional)
             </Text>
 
@@ -399,21 +401,22 @@ export default function BookDetailScreen({ navigation }: Props) {
               value={swapMessage}
               onChangeText={setSwapMessage}
               placeholder="Hi! I'd love to swap for this book..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={ink.subtle}
               multiline
               maxLength={500}
               style={{
                 borderWidth: 1,
-                borderColor: '#e5e7eb',
+                borderColor: ink.border,
                 borderRadius: 12,
                 padding: 16,
                 fontSize: 16,
+                color: ink.strong,
                 minHeight: 100,
                 textAlignVertical: 'top',
               }}
             />
 
-            <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 8, textAlign: 'right' }}>
+            <Text style={{ fontSize: 13, color: ink.subtle, marginTop: 8, textAlign: 'right' }}>
               {swapMessage.length}/500
             </Text>
 

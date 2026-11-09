@@ -203,20 +203,20 @@ export default function SwapPostScreen({ navigation }: Props) {
   const isValid = book && bookImage && condition && genre;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <View className="px-6 pt-4 pb-10">
           <TouchableOpacity onPress={() => navigation.goBack()} className="mb-6">
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><ArrowLeft size={16} color="#38B6FF" weight="regular" /><Text className="text-primary text-base">Back</Text></View>
           </TouchableOpacity>
 
-          <Text className="text-2xl mb-6" style={{ fontFamily: fonts.serifBold }}>Post Book for Swap</Text>
+          <Text className="text-2xl mb-6 text-black dark:text-white" style={{ fontFamily: fonts.serifBold }}>Post Book for Swap</Text>
 
           {/* Book Info */}
           {book ? (
             <View className="mb-6">
-              <Text className="text-sm font-semibold mb-2">Book</Text>
-              <View className="flex-row bg-gray-50 rounded-xl p-4">
+              <Text className="text-sm font-semibold mb-2 text-black dark:text-white">Book</Text>
+              <View className="flex-row bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                 <BookCover
                   coverUrl={book.cover_image_url}
                   width={60}
@@ -224,8 +224,8 @@ export default function SwapPostScreen({ navigation }: Props) {
                   style={{ borderRadius: 4, marginRight: 16 }}
                 />
                 <View className="flex-1 justify-center">
-                  <Text className="font-semibold" style={{ marginBottom: 4 }}>{book.title}</Text>
-                  <Text className="text-gray-600 text-sm">{book.author}</Text>
+                  <Text className="font-semibold text-black dark:text-white" style={{ marginBottom: 4 }}>{book.title}</Text>
+                  <Text className="text-gray-600 dark:text-gray-300 text-sm">{book.author}</Text>
                   <TouchableOpacity onPress={() => setBook(null)}>
                     <Text className="text-primary text-sm mt-2">Change</Text>
                   </TouchableOpacity>
@@ -246,7 +246,7 @@ export default function SwapPostScreen({ navigation }: Props) {
           )}
 
           {/* Book Photo */}
-          <Text className="text-sm font-semibold mb-2">Photo of Book *</Text>
+          <Text className="text-sm font-semibold mb-2 text-black dark:text-white">Photo of Book *</Text>
           <TouchableOpacity onPress={pickImage} className="mb-6">
             {bookImage ? (
               <Image
@@ -254,26 +254,26 @@ export default function SwapPostScreen({ navigation }: Props) {
                 style={{ width: '100%', height: 200, borderRadius: 12 }}
               />
             ) : (
-              <View className="w-full h-48 bg-gray-100 rounded-xl items-center justify-center">
+              <View className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-xl items-center justify-center">
                 <Camera size={40} color="#9ca3af" weight="duotone" style={{ marginBottom: 8 }} />
-                <Text className="text-gray-500">Take or choose a photo of your book</Text>
+                <Text className="text-gray-500 dark:text-gray-400">Take or choose a photo of your book</Text>
               </View>
             )}
           </TouchableOpacity>
 
           {/* Condition */}
-          <Text className="text-sm font-semibold mb-2">Condition *</Text>
+          <Text className="text-sm font-semibold mb-2 text-black dark:text-white">Condition *</Text>
           <View className="flex-row flex-wrap mb-6">
             {CONDITIONS.map((c) => (
               <TouchableOpacity
                 key={c.value}
                 onPress={() => setCondition(c.value)}
                 className={`px-4 py-2 rounded-full mr-2 mb-2 ${
-                  condition === c.value ? 'bg-primary' : 'bg-gray-100'
+                  condition === c.value ? 'bg-primary' : 'bg-gray-100 dark:bg-gray-800'
                 }`}
               >
                 <Text
-                  className={condition === c.value ? 'text-white' : 'text-gray-700'}
+                  className={condition === c.value ? 'text-white' : 'text-gray-700 dark:text-gray-300'}
                 >
                   {c.label}
                 </Text>
@@ -282,17 +282,17 @@ export default function SwapPostScreen({ navigation }: Props) {
           </View>
 
           {/* Genre */}
-          <Text className="text-sm font-semibold mb-2">Genre *</Text>
+          <Text className="text-sm font-semibold mb-2 text-black dark:text-white">Genre *</Text>
           <View className="flex-row flex-wrap mb-6">
             {GENRES.map((g) => (
               <TouchableOpacity
                 key={g}
                 onPress={() => setGenre(g)}
                 className={`px-4 py-2 rounded-full mr-2 mb-2 ${
-                  genre === g ? 'bg-primary' : 'bg-gray-100'
+                  genre === g ? 'bg-primary' : 'bg-gray-100 dark:bg-gray-800'
                 }`}
               >
-                <Text className={genre === g ? 'text-white' : 'text-gray-700'}>
+                <Text className={genre === g ? 'text-white' : 'text-gray-700 dark:text-gray-300'}>
                   {g}
                 </Text>
               </TouchableOpacity>
@@ -300,19 +300,19 @@ export default function SwapPostScreen({ navigation }: Props) {
           </View>
 
           {/* Swap Type */}
-          <Text className="text-sm font-semibold mb-2">I want to *</Text>
+          <Text className="text-sm font-semibold mb-2 text-black dark:text-white">I want to *</Text>
           <View className="flex-row mb-6">
             {SWAP_TYPES.map((s) => (
               <TouchableOpacity
                 key={s.value}
                 onPress={() => setSwapType(s.value)}
                 className={`flex-1 py-3 rounded-xl mr-2 ${
-                  swapType === s.value ? 'bg-primary' : 'bg-gray-100'
+                  swapType === s.value ? 'bg-primary' : 'bg-gray-100 dark:bg-gray-800'
                 }`}
               >
                 <Text
                   className={`text-center font-semibold ${
-                    swapType === s.value ? 'text-white' : 'text-gray-700'
+                    swapType === s.value ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {s.label}
@@ -326,7 +326,7 @@ export default function SwapPostScreen({ navigation }: Props) {
             onPress={handlePost}
             disabled={!isValid || loading}
             className={`py-4 rounded-xl ${
-              !isValid || loading ? 'bg-gray-300' : 'bg-green-500'
+              !isValid || loading ? 'bg-gray-300 dark:bg-gray-700' : 'bg-green-500'
             }`}
           >
             <Text className="text-white text-center font-semibold text-lg">

@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Post } from '../models/Post';
 import BookCover from './BookCover';
 import { fonts } from '../theme/fonts';
+import { useThemeColors } from '../theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 12;
@@ -17,6 +18,7 @@ interface Props {
 
 // Two-column cover grid used on Profile and other readers' profiles.
 export default function BookGrid({ posts, onPress, onLongPress }: Props) {
+  const ink = useThemeColors();
   return (
     <View
       style={{
@@ -44,15 +46,15 @@ export default function BookGrid({ posts, onPress, onLongPress }: Props) {
                 width: CARD_W,
                 height: CARD_H,
                 borderRadius: 8,
-                backgroundColor: '#fff',
+                backgroundColor: ink.isDark ? '#1f2937' : '#fff',
                 shadowColor: '#1e293b',
                 shadowOffset: { width: 0, height: 5 },
-                shadowOpacity: 0.16,
+                shadowOpacity: ink.isDark ? 0.4 : 0.16,
                 shadowRadius: 8,
                 elevation: 4,
               }}
             >
-              <View style={{ width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#f3f4f6' }}>
+              <View style={{ width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: ink.hairline }}>
                 {item.post_type === 'swap' && item.image_url ? (
                   <Image source={{ uri: item.image_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                 ) : (
@@ -67,7 +69,7 @@ export default function BookGrid({ posts, onPress, onLongPress }: Props) {
                 )}
               </View>
             </View>
-            <Text style={{ fontSize: 13, fontFamily: fonts.serifMedium, color: '#1a1a1a', marginTop: 6 }} numberOfLines={1}>
+            <Text style={{ fontSize: 13, fontFamily: fonts.serifMedium, color: ink.heading, marginTop: 6 }} numberOfLines={1}>
               {item.title}
             </Text>
           </TouchableOpacity>

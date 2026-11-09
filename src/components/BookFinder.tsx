@@ -14,6 +14,7 @@ import BookCover from './BookCover';
 import { fetchBookByISBN, searchBooks, BookInfo } from '../services/booksService';
 import { MagnifyingGlass, Barcode, X } from 'phosphor-react-native';
 import { fonts } from '../theme/fonts';
+import { useThemeColors } from '../theme/colors';
 
 interface Props {
   onSelect: (book: BookInfo) => void;
@@ -25,6 +26,7 @@ type Mode = 'choice' | 'scan' | 'search';
 
 // Shared book picker: barcode scan or title/author search (Google Books).
 export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }: Props) {
+  const ink = useThemeColors();
   const [mode, setMode] = useState<Mode>('choice');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<BookInfo[]>([]);
@@ -83,15 +85,15 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white px-6">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900 px-6">
       {onCancel && (
         <TouchableOpacity onPress={onCancel} className="mt-4 mb-4">
           <Text className="text-primary text-base">← Back</Text>
         </TouchableOpacity>
       )}
 
-      <Text className="text-2xl mb-2" style={{ fontFamily: fonts.serifBold }}>{title}</Text>
-      <Text className="text-gray-500 mb-6">Scan the barcode or search for your book</Text>
+      <Text className="text-2xl mb-2" style={{ fontFamily: fonts.serifBold, color: ink.heading }}>{title}</Text>
+      <Text className="text-gray-500 dark:text-gray-400 mb-6">Scan the barcode or search for your book</Text>
 
       {mode === 'choice' && (
         <>
@@ -121,28 +123,28 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#f3f4f6',
+              backgroundColor: ink.surface,
               borderRadius: 12,
               paddingHorizontal: 14,
               paddingVertical: 10,
               marginBottom: 12,
             }}
           >
-            <MagnifyingGlass size={16} color="#9ca3af" weight="regular" style={{ marginRight: 8 }} />
+            <MagnifyingGlass size={16} color={ink.subtle} weight="regular" style={{ marginRight: 8 }} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Title or author…"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={ink.subtle}
               autoCorrect={false}
               autoCapitalize="none"
               returnKeyType="search"
               onSubmitEditing={handleSearch}
-              style={{ flex: 1, fontSize: 16, color: '#1f2937' }}
+              style={{ flex: 1, fontSize: 16, color: ink.strong }}
             />
             {query.length > 0 && (
               <TouchableOpacity onPress={() => { setQuery(''); setResults([]); setHasSearched(false); }}>
-                <X size={16} color="#9ca3af" weight="regular" />
+                <X size={16} color={ink.subtle} weight="regular" />
               </TouchableOpacity>
             )}
           </View>
@@ -150,7 +152,7 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
           <TouchableOpacity
             onPress={handleSearch}
             disabled={!query.trim() || searching}
-            className={`py-3 rounded-xl mb-4 ${query.trim() && !searching ? 'bg-primary' : 'bg-gray-200'}`}
+            className={`py-3 rounded-xl mb-4 ${query.trim() && !searching ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}
           >
             {searching ? (
               <ActivityIndicator color="#fff" />
@@ -166,19 +168,19 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => onSelect(item)}
-                className="flex-row items-center py-3 border-b border-gray-100"
+                className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-800"
               >
                 <BookCover coverUrl={item.cover_image_url} width={44} height={64} style={{ borderRadius: 4 }} />
                 <View className="ml-3 flex-1">
-                  <Text style={{ fontSize: 15, fontWeight: '600' }} numberOfLines={2}>{item.title}</Text>
-                  <Text style={{ fontSize: 13, color: '#6b7280' }} numberOfLines={1}>{item.author}</Text>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: ink.heading }} numberOfLines={2}>{item.title}</Text>
+                  <Text style={{ fontSize: 13, color: ink.muted }} numberOfLines={1}>{item.author}</Text>
                 </View>
               </TouchableOpacity>
             )}
             ListEmptyComponent={
               hasSearched && !searching ? (
                 <View className="items-center py-8">
-                  <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center' }}>
+                  <Text style={{ fontSize: 15, color: ink.muted, textAlign: 'center' }}>
                     No results for "{query}". Try a different title or author.
                   </Text>
                 </View>
@@ -187,15 +189,15 @@ export default function BookFinder({ onSelect, onCancel, title = 'Find a Book' }
           />
 
           <TouchableOpacity onPress={() => setMode('choice')} className="py-3">
-            <Text className="text-gray-500 text-center">← All options</Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center">← All options</Text>
           </TouchableOpacity>
         </>
       )}
 
       {lookingUp && (
-        <View className="absolute inset-0 bg-white/80 items-center justify-center">
+        <View className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 items-center justify-center">
           <ActivityIndicator size="large" color="#38B6FF" />
-          <Text style={{ marginTop: 12, color: '#6b7280' }}>Looking up book…</Text>
+          <Text style={{ marginTop: 12, color: ink.muted }}>Looking up book…</Text>
         </View>
       )}
     </SafeAreaView>

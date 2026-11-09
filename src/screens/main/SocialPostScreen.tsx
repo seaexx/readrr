@@ -18,12 +18,14 @@ import BookFinder from '../../components/BookFinder';
 import { BookInfo } from '../../services/booksService';
 import { createPost } from '../../services/postsService';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeColors } from '../../theme/colors';
 
 interface Props {
   navigation: any;
 }
 
 export default function SocialPostScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const session = useAuthStore((state) => state.session);
   const setHasPosted = useAuthStore((state) => state.setHasPosted);
 
@@ -79,7 +81,7 @@ export default function SocialPostScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-gray-900"
     >
       <SafeAreaView className="flex-1">
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
@@ -88,11 +90,11 @@ export default function SocialPostScreen({ navigation }: Props) {
               <Text className="text-primary text-base">← Back</Text>
             </TouchableOpacity>
 
-            <Text className="text-2xl mb-6" style={{ fontFamily: fonts.serifBold }}>Share What You're Reading</Text>
+            <Text className="text-2xl mb-6 text-black dark:text-white" style={{ fontFamily: fonts.serifBold }}>Share What You're Reading</Text>
 
             {/* Book Selection */}
             {book ? (
-              <View className="flex-row mb-6 bg-gray-50 rounded-xl p-4">
+              <View className="flex-row mb-6 bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                 <BookCover
                   coverUrl={book.cover_image_url}
                   width={60}
@@ -100,8 +102,8 @@ export default function SocialPostScreen({ navigation }: Props) {
                   style={{ borderRadius: 4, marginRight: 16 }}
                 />
                 <View className="flex-1 justify-center">
-                  <Text className="font-semibold text-base" style={{ marginBottom: 4 }}>{book.title}</Text>
-                  <Text className="text-gray-600 text-sm">{book.author}</Text>
+                  <Text className="font-semibold text-base text-black dark:text-white" style={{ marginBottom: 4 }}>{book.title}</Text>
+                  <Text className="text-gray-600 dark:text-gray-300 text-sm">{book.author}</Text>
                   <TouchableOpacity onPress={() => setBook(null)} className="mt-2">
                     <Text className="text-primary text-sm">Change book</Text>
                   </TouchableOpacity>
@@ -121,17 +123,18 @@ export default function SocialPostScreen({ navigation }: Props) {
             )}
 
             {/* Caption */}
-            <Text className="text-sm font-semibold mb-2">Caption (optional)</Text>
+            <Text className="text-sm font-semibold mb-2 text-black dark:text-white">Caption (optional)</Text>
             <TextInput
               placeholder="What do you think about this book?"
+              placeholderTextColor={ink.subtle}
               value={caption}
               onChangeText={setCaption}
               multiline
               numberOfLines={4}
               maxLength={500}
-              style={styles.textArea}
+              style={[styles.textArea, { borderColor: ink.border, color: ink.strong }]}
             />
-            <Text className="text-gray-400 text-xs text-right mb-6">
+            <Text className="text-gray-400 dark:text-gray-500 text-xs text-right mb-6">
               {caption.length}/500
             </Text>
 
@@ -140,7 +143,7 @@ export default function SocialPostScreen({ navigation }: Props) {
               onPress={handlePost}
               disabled={!book || loading}
               className={`py-4 rounded-xl ${
-                !book || loading ? 'bg-gray-300' : 'bg-primary'
+                !book || loading ? 'bg-gray-300 dark:bg-gray-700' : 'bg-primary'
               }`}
             >
               <Text className="text-white text-center font-semibold text-lg">

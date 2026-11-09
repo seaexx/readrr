@@ -30,6 +30,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { Post, Comment } from '../../models/Post';
 import { Heart, ChatCircle, Bookmark, Trash } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 import { promptSaveToShelf } from '../../utils/shelfPrompt';
 import { isOnShelf } from '../../services/shelfService';
 import { deletePost } from '../../services/postsService';
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export default function PostDetailScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const route = useRoute();
   const { postId } = route.params as { postId: string };
   const session = useAuthStore((state) => state.session);
@@ -282,18 +284,18 @@ export default function PostDetailScreen({ navigation }: Props) {
   const isOwner = !!post && post.user?.id === session?.user.id;
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
         keyboardVerticalOffset={0}
       >
         {/* Header */}
-        <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
+        <View className="flex-row items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800">
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
           </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', fontSize: 19, fontFamily: fonts.serifSemiBold }}>Post</Text>
+          <Text style={{ flex: 1, textAlign: 'center', fontSize: 19, fontFamily: fonts.serifSemiBold, color: ink.heading }}>Post</Text>
           {isOwner ? (
             <TouchableOpacity onPress={handleDelete} style={{ width: 50, alignItems: 'flex-end' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Trash size={22} color="#ef4444" weight="regular" />
@@ -314,10 +316,10 @@ export default function PostDetailScreen({ navigation }: Props) {
             <View
               style={{
                 borderRadius: 8,
-                backgroundColor: '#fff',
+                backgroundColor: ink.isDark ? '#1f2937' : '#fff',
                 shadowColor: '#1e293b',
                 shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.18,
+                shadowOpacity: ink.isDark ? 0.4 : 0.18,
                 shadowRadius: 10,
                 elevation: 5,
               }}
@@ -337,26 +339,26 @@ export default function PostDetailScreen({ navigation }: Props) {
                 />
               )}
             </View>
-            <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', textAlign: 'center', marginTop: 14, marginBottom: 4 }}>{post.title}</Text>
+            <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: ink.heading, textAlign: 'center', marginTop: 14, marginBottom: 4 }}>{post.title}</Text>
             {post.author && (
-              <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>{post.author}</Text>
+              <Text style={{ fontSize: 16, color: ink.muted, textAlign: 'center' }}>{post.author}</Text>
             )}
           </View>
 
               {/* Description */}
               {loadingDescription && (
-                <Text style={{ fontSize: 14, color: '#9ca3af', fontStyle: 'italic', marginBottom: 12 }}>
+                <Text style={{ fontSize: 14, color: ink.subtle, fontStyle: 'italic', marginBottom: 12 }}>
                   Loading description...
                 </Text>
               )}
               {!loadingDescription && descriptionFetched && !description && (
-                <Text style={{ fontSize: 14, color: '#9ca3af', fontStyle: 'italic', marginBottom: 12 }}>
+                <Text style={{ fontSize: 14, color: ink.subtle, fontStyle: 'italic', marginBottom: 12 }}>
                   No description available
                 </Text>
               )}
               {description && (
                 <View className="mb-3">
-                  <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22 }}>
+                  <Text style={{ fontSize: 15, color: ink.body, lineHeight: 22 }}>
                     {showFullDescription ? description : truncatedDescription}
                   </Text>
                   {description.length > 200 && (
@@ -372,7 +374,7 @@ export default function PostDetailScreen({ navigation }: Props) {
               )}
 
               {/* Divider */}
-              <View className="h-px bg-gray-200 my-3" />
+              <View className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
 
               {/* Posted By */}
               <TouchableOpacity
@@ -389,8 +391,8 @@ export default function PostDetailScreen({ navigation }: Props) {
                   size={32}
                 />
                 <View className="ml-2">
-                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Posted by</Text>
-                  <Text style={{ fontSize: 15, fontWeight: '500' }}>
+                  <Text style={{ fontSize: 12, color: ink.muted }}>Posted by</Text>
+                  <Text style={{ fontSize: 15, fontWeight: '500', color: ink.heading }}>
                     @{post.user?.username}
                   </Text>
                 </View>
@@ -398,8 +400,8 @@ export default function PostDetailScreen({ navigation }: Props) {
 
               {/* Caption */}
               {post.caption && (
-                <View className="mb-3 bg-gray-50 rounded-lg p-3">
-                  <Text style={{ fontSize: 15, color: '#1f2937', lineHeight: 22 }}>
+                <View className="mb-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <Text style={{ fontSize: 15, color: ink.strong, lineHeight: 22 }}>
                     "{post.caption}"
                   </Text>
                 </View>
@@ -413,14 +415,14 @@ export default function PostDetailScreen({ navigation }: Props) {
                   activeOpacity={0.7}
                 >
                   <Heart size={24} color={hasLiked ? '#E54B4B' : '#0072DD'} weight={hasLiked ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
-                  <Text style={{ fontSize: 15, color: '#374151', fontWeight: '500' }}>
+                  <Text style={{ fontSize: 15, color: ink.body, fontWeight: '500' }}>
                     {likeCount}
                   </Text>
                 </TouchableOpacity>
 
                 <View className="flex-row items-center">
                   <ChatCircle size={24} color="#0072DD" weight="regular" style={{ marginRight: 4 }} />
-                  <Text style={{ fontSize: 15, color: '#374151', fontWeight: '500' }}>
+                  <Text style={{ fontSize: 15, color: ink.body, fontWeight: '500' }}>
                     {comments.length}
                   </Text>
                 </View>
@@ -439,21 +441,21 @@ export default function PostDetailScreen({ navigation }: Props) {
                   style={{ marginLeft: 'auto' }}
                   activeOpacity={0.7}
                 >
-                  <Bookmark size={24} color={saved ? '#38B6FF' : '#6b7280'} weight={saved ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
-                  <Text style={{ fontSize: 15, color: saved ? '#38B6FF' : '#374151', fontWeight: '500' }}>{saved ? 'Saved' : 'Save'}</Text>
+                  <Bookmark size={24} color={saved ? '#38B6FF' : ink.muted} weight={saved ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: 15, color: saved ? '#38B6FF' : ink.body, fontWeight: '500' }}>{saved ? 'Saved' : 'Save'}</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Divider */}
-              <View className="h-px bg-gray-200 mb-3" />
+              <View className="h-px bg-gray-200 dark:bg-gray-700 mb-3" />
 
               {/* Comments Section */}
-              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, marginBottom: 12 }}>
+              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: ink.heading, marginBottom: 12 }}>
                 Comments ({comments.length})
               </Text>
 
               {comments.length === 0 ? (
-                <Text style={{ fontSize: 15, color: '#6b7280', marginBottom: 16 }}>
+                <Text style={{ fontSize: 15, color: ink.muted, marginBottom: 16 }}>
                   No comments yet. Be the first!
                 </Text>
               ) : (
@@ -471,20 +473,21 @@ export default function PostDetailScreen({ navigation }: Props) {
         </ScrollView>
 
         {/* Comment Input */}
-        <View className="border-t border-gray-200 px-4 flex-row items-center bg-white" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>
+        <View className="border-t border-gray-200 dark:border-gray-700 px-4 flex-row items-center bg-white dark:bg-gray-900" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>
           <TextInput
             placeholder="Add a comment..."
+            placeholderTextColor={ink.subtle}
             value={newComment}
             onChangeText={setNewComment}
             maxLength={500}
-            style={styles.commentInput}
+            style={[styles.commentInput, { backgroundColor: ink.surface, color: ink.strong }]}
             className="flex-1 mr-3"
           />
           <TouchableOpacity
             onPress={handlePostComment}
             disabled={!newComment.trim() || posting}
             className={`px-4 py-2 rounded-full ${
-              newComment.trim() && !posting ? 'bg-primary' : 'bg-gray-300'
+              newComment.trim() && !posting ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-700'
             }`}
           >
             <Text className="text-white font-semibold">

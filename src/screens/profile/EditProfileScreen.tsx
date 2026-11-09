@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../config/supabase';
 import { Camera, Check } from 'phosphor-react-native';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeColors } from '../../theme/colors';
 import { uploadAvatar } from '../../services/storageService';
 import Avatar from '../../components/Avatar';
 import CityAutocomplete from '../../components/CityAutocomplete';
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export default function EditProfileScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const { profile, setProfile } = useAuthStore();
 
   const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatar_url || null);
@@ -166,18 +168,18 @@ export default function EditProfileScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-gray-900"
     >
       <SafeAreaView className="flex-1">
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
           {/* Header */}
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text className="text-primary text-base">Cancel</Text>
             </TouchableOpacity>
-            <Text className="text-lg" style={{ fontFamily: fonts.serifSemiBold }}>Edit Profile</Text>
+            <Text className="text-lg" style={{ fontFamily: fonts.serifSemiBold, color: ink.heading }}>Edit Profile</Text>
             <TouchableOpacity onPress={handleSave} disabled={!canSave}>
-              <Text className={`text-base font-semibold ${!canSave ? 'text-gray-400' : 'text-primary'}`}>
+              <Text className={`text-base font-semibold ${!canSave ? 'text-gray-400 dark:text-gray-600' : 'text-primary'}`}>
                 {loading ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -200,16 +202,16 @@ export default function EditProfileScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             {/* Username */}
-            <Text className="text-sm text-gray-500 mb-2">Username</Text>
-            <View style={styles.usernameRow}>
-              <Text style={{ fontSize: 16, color: '#9ca3af' }}>@</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">Username</Text>
+            <View style={[styles.usernameRow, { borderColor: ink.border }]}>
+              <Text style={{ fontSize: 16, color: ink.subtle }}>@</Text>
               <TextInput
                 value={username}
                 onChangeText={handleUsernameChange}
                 autoCapitalize="none"
                 autoCorrect={false}
                 maxLength={20}
-                style={{ flex: 1, fontSize: 16, marginLeft: 2 }}
+                style={{ flex: 1, fontSize: 16, marginLeft: 2, color: ink.strong }}
               />
               {checkingUsername ? (
                 <ActivityIndicator size="small" color="#38B6FF" />
@@ -217,32 +219,33 @@ export default function EditProfileScreen({ navigation }: Props) {
                 <Check size={18} color="#16a34a" weight="bold" />
               ) : null}
             </View>
-            <Text style={{ fontSize: 12, color: usernameError ? '#ef4444' : '#9ca3af', marginBottom: 16, marginTop: 6 }}>
+            <Text style={{ fontSize: 12, color: usernameError ? '#ef4444' : ink.subtle, marginBottom: 16, marginTop: 6 }}>
               {usernameError || 'Lowercase letters, numbers and underscores, 3–20 characters.'}
             </Text>
 
             {/* Email (read-only) */}
-            <Text className="text-sm text-gray-500 mb-2">Email</Text>
-            <View className="bg-gray-100 rounded-xl px-4 py-4 mb-4">
-              <Text className="text-gray-600">{profile.email}</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">Email</Text>
+            <View className="bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-4 mb-4">
+              <Text className="text-gray-600 dark:text-gray-300">{profile.email}</Text>
             </View>
 
             {/* City */}
-            <Text className="text-sm text-gray-500 mb-2">City</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">City</Text>
             <CityAutocomplete value={city} onChangeText={handleCityText} onSelect={handleCityPick} />
 
             {/* Bio */}
-            <Text className="text-sm text-gray-500 mb-2">Bio</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">Bio</Text>
             <TextInput
               placeholder="Tell us about yourself..."
+              placeholderTextColor={ink.subtle}
               value={bio}
               onChangeText={setBio}
               multiline
               numberOfLines={4}
               maxLength={300}
-              style={[styles.textInput, styles.textArea]}
+              style={[styles.textInput, styles.textArea, { borderColor: ink.border, color: ink.strong }]}
             />
-            <Text className="text-gray-400 text-xs text-right mb-4">
+            <Text className="text-gray-400 dark:text-gray-500 text-xs text-right mb-4">
               {bio.length}/300
             </Text>
           </View>

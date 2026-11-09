@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useColorScheme } from 'nativewind';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../config/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -110,6 +111,8 @@ function OnboardingNavigator() {
 function MainTabs() {
   const session = useAuthStore((state) => state.session);
   const [inboxBadge, setInboxBadge] = useState(0);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   // Fetch inbox badge count (pending requests + unread messages)
   useEffect(() => {
@@ -182,9 +185,10 @@ function MainTabs() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarActiveTintColor: '#38B6FF',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarInactiveTintColor: isDark ? '#6b7280' : '#9ca3af',
         tabBarStyle: {
-          borderTopColor: '#f3f4f6',
+          backgroundColor: isDark ? '#111827' : '#ffffff',
+          borderTopColor: isDark ? '#1f2937' : '#f3f4f6',
         },
       }}
     >
@@ -319,6 +323,7 @@ function NotificationHandler() {
 
 export default function RootNavigator() {
   const { session, profile, loading, setSession, setLoading, setProfile, setHasPosted } = useAuthStore();
+  const { colorScheme } = useColorScheme();
 
   // Listen for auth changes
   useEffect(() => {
@@ -444,7 +449,7 @@ export default function RootNavigator() {
   const showMain = session && !!profile;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <NotificationHandler />
       {showAuth ? (
         <AuthNavigator />

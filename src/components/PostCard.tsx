@@ -10,6 +10,7 @@ import Avatar from './Avatar';
 import BookCover from './BookCover';
 import { Heart, ChatCircle, DotsThree } from 'phosphor-react-native';
 import { fonts } from '../theme/fonts';
+import { useThemeColors } from '../theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ interface Props {
 export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
   const navigation = useNavigation<any>();
   const session = useAuthStore((state) => state.session);
+  const ink = useThemeColors();
 
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
@@ -159,7 +161,7 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
   };
 
   return (
-    <View className="bg-white mb-2 border-b border-gray-100">
+    <View className="bg-white dark:bg-gray-900 mb-2 border-b border-gray-100 dark:border-gray-800">
       {/* Header */}
       <TouchableOpacity
         onPress={handleUserPress}
@@ -171,8 +173,8 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
           size={44}
         />
         <View className="ml-3 flex-1">
-          <Text style={{ fontSize: 15, fontWeight: '600' }}>@{post.user?.username}</Text>
-          <Text style={{ fontSize: 13, color: '#6b7280' }}>{timeAgo(post.created_at)}</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: ink.heading }}>@{post.user?.username}</Text>
+          <Text style={{ fontSize: 13, color: ink.muted }}>{timeAgo(post.created_at)}</Text>
         </View>
         {post.post_type === 'swap' && (
           <View className="bg-green-100 px-3 py-1.5 rounded-full">
@@ -181,7 +183,7 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
         )}
         {!isOwnPost && (
           <TouchableOpacity onPress={handleMenuPress} style={{ paddingLeft: 8, paddingVertical: 4 }}>
-            <DotsThree size={18} color="#9ca3af" weight="bold" />
+            <DotsThree size={18} color={ink.subtle} weight="bold" />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -207,10 +209,10 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
 
         {/* Book Info - below image like Instagram */}
         <View className="px-4 pt-3 pb-2">
-          <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginBottom: 2 }}>{post.title}</Text>
-          {post.author && <Text style={{ fontSize: 15, color: '#4b5563' }}>{post.author}</Text>}
+          <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: ink.heading, marginBottom: 2 }}>{post.title}</Text>
+          {post.author && <Text style={{ fontSize: 15, color: ink.secondary }}>{post.author}</Text>}
           {post.caption && (
-            <Text style={{ fontSize: 15, color: '#1f2937', marginTop: 6 }}>{post.caption}</Text>
+            <Text style={{ fontSize: 15, color: ink.strong, marginTop: 6 }}>{post.caption}</Text>
           )}
         </View>
 
@@ -218,15 +220,15 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
         {post.post_type === 'swap' && (
           <View className="px-4 pb-2 flex-row flex-wrap">
             {post.condition && (
-              <View className="bg-gray-100 px-3 py-1.5 rounded-full mr-2 mb-1">
-                <Text style={{ fontSize: 14, color: '#374151' }} className="capitalize">
+              <View className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full mr-2 mb-1">
+                <Text style={{ fontSize: 14, color: ink.body }} className="capitalize">
                   {post.condition.replace('_', ' ')}
                 </Text>
               </View>
             )}
             {post.genre && (
-              <View className="bg-gray-100 px-3 py-1.5 rounded-full mr-2 mb-1">
-                <Text style={{ fontSize: 14, color: '#374151' }}>{post.genre}</Text>
+              <View className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full mr-2 mb-1">
+                <Text style={{ fontSize: 14, color: ink.body }}>{post.genre}</Text>
               </View>
             )}
             {post.swap_type && (
@@ -245,13 +247,13 @@ export default function PostCard({ post, onPress, onBlock, onReport }: Props) {
           disabled={loading}
           className="flex-row items-center mr-6"
         >
-          <Heart size={24} color={hasLiked ? '#E54B4B' : '#9ca3af'} weight={hasLiked ? 'fill' : 'regular'} style={{ marginRight: 6 }} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151' }}>{likeCount}</Text>
+          <Heart size={24} color={hasLiked ? '#E54B4B' : ink.subtle} weight={hasLiked ? 'fill' : 'regular'} style={{ marginRight: 6 }} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: ink.body }}>{likeCount}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleComment} className="flex-row items-center">
-          <ChatCircle size={24} color="#6b7280" weight="regular" style={{ marginRight: 6 }} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151' }}>{commentCount}</Text>
+          <ChatCircle size={24} color={ink.muted} weight="regular" style={{ marginRight: 6 }} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: ink.body }}>{commentCount}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -38,9 +38,9 @@ export default function BarcodeScanner({
 
   if (!permission.granted) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center px-6">
-        <Text className="text-xl font-bold mb-4 text-center">Camera Permission Required</Text>
-        <Text className="text-gray-600 mb-6 text-center">
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900 items-center justify-center px-6">
+        <Text className="text-xl font-bold mb-4 text-center text-black dark:text-white">Camera Permission Required</Text>
+        <Text className="text-gray-600 dark:text-gray-300 mb-6 text-center">
           We need camera access to scan book barcodes
         </Text>
         <TouchableOpacity
@@ -50,7 +50,7 @@ export default function BarcodeScanner({
           <Text className="text-white font-semibold">Grant Permission</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onCancel}>
-          <Text className="text-gray-500">Cancel</Text>
+          <Text className="text-gray-500 dark:text-gray-400">Cancel</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );

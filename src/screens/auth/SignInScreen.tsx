@@ -12,6 +12,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { supabase } from '../../config/supabase';
+import { useThemeColors } from '../../theme/colors';
 
 const styles = StyleSheet.create({
   textInput: {
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export default function SignInScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,7 +62,7 @@ export default function SignInScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-gray-900"
     >
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <View className="px-6 pt-16">
@@ -68,35 +70,37 @@ export default function SignInScreen({ navigation }: Props) {
             <Text className="text-primary text-base">← Back</Text>
           </TouchableOpacity>
 
-          <Text className="text-3xl mb-2" style={{ fontFamily: fonts.serifBold }}>Welcome Back</Text>
-          <Text className="text-gray-500 mb-8">Sign in to continue</Text>
+          <Text className="text-3xl mb-2" style={{ fontFamily: fonts.serifBold, color: ink.heading }}>Welcome Back</Text>
+          <Text className="text-gray-500 dark:text-gray-400 mb-8">Sign in to continue</Text>
 
-          <Text className="text-sm text-gray-600 mb-2">Email</Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-300 mb-2">Email</Text>
           <TextInput
             placeholder="you@example.com"
+            placeholderTextColor={ink.subtle}
             value={email}
             onChangeText={(text) => setEmail(text.toLowerCase())}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            style={styles.textInput}
+            style={[styles.textInput, { borderColor: ink.border, color: ink.strong }]}
           />
 
-          <Text className="text-sm text-gray-600 mb-2">Password</Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-300 mb-2">Password</Text>
           <TextInput
             placeholder="Your password"
+            placeholderTextColor={ink.subtle}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             autoCapitalize="none"
-            style={[styles.textInput, { marginBottom: 32 }]}
+            style={[styles.textInput, { marginBottom: 32, borderColor: ink.border, color: ink.strong }]}
           />
 
           <TouchableOpacity
             onPress={handleSignIn}
             disabled={loading || !email || !password}
             className={`py-4 rounded-xl ${
-              email && password && !loading ? 'bg-primary' : 'bg-gray-300'
+              email && password && !loading ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-700'
             }`}
           >
             <Text className="text-white text-center font-semibold text-lg">

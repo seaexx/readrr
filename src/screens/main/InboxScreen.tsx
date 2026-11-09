@@ -5,6 +5,7 @@ import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../config/supabase';
 import { WarningCircle, Envelope } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getCached, setCached } from '../../utils/memoryCache';
 import { Swap } from '../../models/Swap';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function InboxScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const route = useRoute();
   const initialTab = (route.params as any)?.tab || 'received';
   const session = useAuthStore((state) => state.session);
@@ -161,7 +163,7 @@ export default function InboxScreen({ navigation }: Props) {
     <TouchableOpacity
       onPress={() => handleSwapPress(swap)}
       disabled={swap.status === 'pending'}
-      className="bg-white mx-4 my-2 p-4 rounded-xl"
+      className="bg-white dark:bg-gray-800 mx-4 my-2 p-4 rounded-xl"
       style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 }}
     >
       <View className="flex-row">
@@ -181,22 +183,22 @@ export default function InboxScreen({ navigation }: Props) {
               username={swap.requester?.username || 'User'}
               size={24}
             />
-            <Text style={{ fontSize: 15, fontWeight: '600', marginLeft: 8 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', marginLeft: 8, color: ink.heading }}>
               @{swap.requester?.username}
             </Text>
             {swap.status === 'accepted' && (
-              <View className="bg-green-100 px-2 py-0.5 rounded-full ml-2">
-                <Text style={{ fontSize: 12, color: '#15803d' }}>Active</Text>
+              <View className="bg-green-100 dark:bg-green-950 px-2 py-0.5 rounded-full ml-2">
+                <Text style={{ fontSize: 12, color: ink.isDark ? '#86efac' : '#15803d' }}>Active</Text>
               </View>
             )}
           </View>
 
-          <Text style={{ fontSize: 14, color: '#374151' }} numberOfLines={1}>
+          <Text style={{ fontSize: 14, color: ink.body }} numberOfLines={1}>
             {swap.post?.title}
           </Text>
 
           {swap.request_message && (
-            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }} numberOfLines={2}>
+            <Text style={{ fontSize: 13, color: ink.muted, marginTop: 4 }} numberOfLines={2}>
               "{swap.request_message}"
             </Text>
           )}
@@ -208,9 +210,9 @@ export default function InboxScreen({ navigation }: Props) {
         <View className="flex-row mt-4 gap-3">
           <TouchableOpacity
             onPress={() => handleDecline(swap)}
-            className="flex-1 py-2.5 rounded-lg bg-gray-100"
+            className="flex-1 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-700"
           >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#6b7280', textAlign: 'center' }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: ink.muted, textAlign: 'center' }}>
               Decline
             </Text>
           </TouchableOpacity>
@@ -227,7 +229,7 @@ export default function InboxScreen({ navigation }: Props) {
 
       {/* Tap to chat hint for accepted */}
       {swap.status === 'accepted' && (
-        <View className="mt-3 pt-3 border-t border-gray-100">
+        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           <Text style={{ fontSize: 13, color: '#38B6FF', textAlign: 'center' }}>
             Tap to open chat →
           </Text>
@@ -240,7 +242,7 @@ export default function InboxScreen({ navigation }: Props) {
     <TouchableOpacity
       onPress={() => handleSwapPress(swap)}
       disabled={swap.status === 'pending'}
-      className="bg-white mx-4 my-2 p-4 rounded-xl"
+      className="bg-white dark:bg-gray-800 mx-4 my-2 p-4 rounded-xl"
       style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 }}
     >
       <View className="flex-row">
@@ -260,18 +262,18 @@ export default function InboxScreen({ navigation }: Props) {
               username={swap.owner?.username || 'User'}
               size={24}
             />
-            <Text style={{ fontSize: 15, fontWeight: '600', marginLeft: 8 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', marginLeft: 8, color: ink.heading }}>
               @{swap.owner?.username}
             </Text>
             <View
               className={`px-2 py-0.5 rounded-full ml-2 ${
-                swap.status === 'pending' ? 'bg-yellow-100' : 'bg-green-100'
+                swap.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-950' : 'bg-green-100 dark:bg-green-950'
               }`}
             >
               <Text
                 style={{
                   fontSize: 12,
-                  color: swap.status === 'pending' ? '#92400e' : '#15803d',
+                  color: swap.status === 'pending' ? (ink.isDark ? '#fcd34d' : '#92400e') : (ink.isDark ? '#86efac' : '#15803d'),
                 }}
               >
                 {swap.status === 'pending' ? 'Pending' : 'Accepted'}
@@ -279,12 +281,12 @@ export default function InboxScreen({ navigation }: Props) {
             </View>
           </View>
 
-          <Text style={{ fontSize: 14, color: '#374151' }} numberOfLines={1}>
+          <Text style={{ fontSize: 14, color: ink.body }} numberOfLines={1}>
             {swap.post?.title}
           </Text>
 
           {swap.request_message && (
-            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }} numberOfLines={2}>
+            <Text style={{ fontSize: 13, color: ink.muted, marginTop: 4 }} numberOfLines={2}>
               Your message: "{swap.request_message}"
             </Text>
           )}
@@ -293,15 +295,15 @@ export default function InboxScreen({ navigation }: Props) {
 
       {/* Status hint */}
       {swap.status === 'pending' && (
-        <View className="mt-3 pt-3 border-t border-gray-100">
-          <Text style={{ fontSize: 13, color: '#6b7280', textAlign: 'center' }}>
+        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <Text style={{ fontSize: 13, color: ink.muted, textAlign: 'center' }}>
             Waiting for response...
           </Text>
         </View>
       )}
 
       {swap.status === 'accepted' && (
-        <View className="mt-3 pt-3 border-t border-gray-100">
+        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           <Text style={{ fontSize: 13, color: '#38B6FF', textAlign: 'center' }}>
             Tap to open chat →
           </Text>
@@ -319,10 +321,10 @@ export default function InboxScreen({ navigation }: Props) {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center px-8">
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900 items-center justify-center px-8">
         <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
-        <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load inbox</Text>
-        <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+        <Text style={{ fontSize: 16, color: ink.body, fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load inbox</Text>
+        <Text style={{ fontSize: 14, color: ink.muted, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
         <TouchableOpacity onPress={() => { setError(null); loadSwaps(); }} className="bg-primary px-6 py-3 rounded-xl">
           <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
         </TouchableOpacity>
@@ -331,14 +333,14 @@ export default function InboxScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <View className="px-4 pt-2 pb-4 bg-white">
-        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Inbox</Text>
+      <View className="px-4 pt-2 pb-4 bg-white dark:bg-gray-900">
+        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold, color: ink.heading }}>Inbox</Text>
       </View>
 
       {/* Tabs */}
-      <View className="flex-row bg-white border-b border-gray-200">
+      <View className="flex-row bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <TouchableOpacity
           onPress={() => setActiveTab('received')}
           className={`flex-1 py-3 ${activeTab === 'received' ? 'border-b-2 border-blue-500' : ''}`}
@@ -348,7 +350,7 @@ export default function InboxScreen({ navigation }: Props) {
               style={{
                 fontSize: 15,
                 fontWeight: activeTab === 'received' ? '600' : '400',
-                color: activeTab === 'received' ? '#38B6FF' : '#6b7280',
+                color: activeTab === 'received' ? '#38B6FF' : ink.muted,
               }}
             >
               Received
@@ -370,7 +372,7 @@ export default function InboxScreen({ navigation }: Props) {
             style={{
               fontSize: 15,
               fontWeight: activeTab === 'sent' ? '600' : '400',
-              color: activeTab === 'sent' ? '#38B6FF' : '#6b7280',
+              color: activeTab === 'sent' ? '#38B6FF' : ink.muted,
               textAlign: 'center',
             }}
           >
@@ -388,11 +390,11 @@ export default function InboxScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <Envelope size={48} color="#9ca3af" weight="duotone" />
-            <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151' }}>
+            <Envelope size={48} color={ink.subtle} weight="duotone" />
+            <Text style={{ fontSize: 17, fontWeight: '600', color: ink.body }}>
               {activeTab === 'received' ? 'No swap requests yet' : 'No requests sent'}
             </Text>
-            <Text style={{ fontSize: 15, color: '#6b7280', marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
+            <Text style={{ fontSize: 15, color: ink.muted, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
               {activeTab === 'received'
                 ? 'When someone wants to swap for your books, you\'ll see their requests here'
                 : 'Browse books and request swaps to see them here'}

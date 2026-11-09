@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { getCached, setCached } from '../../utils/memoryCache';
 import { Bell, Star, MapPin, CheckCircle, ArrowsClockwise, ChatCircle, ArrowLeft, WarningCircle, Bookmark } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 import {
   AppNotification,
   getNotifications,
@@ -47,6 +48,7 @@ function notificationIcon(title: string): string {
 }
 
 export default function NotificationsScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const session = useAuthStore((state) => state.session);
   const cacheKey = `notifications:${session?.user.id}`;
   const [notifications, setNotifications] = useState<AppNotification[]>(() => getCached<AppNotification[]>(cacheKey) ?? []);
@@ -133,9 +135,9 @@ export default function NotificationsScreen({ navigation }: Props) {
         alignItems: 'flex-start',
         paddingHorizontal: 16,
         paddingVertical: 14,
-        backgroundColor: item.read ? '#fff' : '#eff6ff',
+        backgroundColor: item.read ? (ink.isDark ? '#111827' : '#fff') : (ink.isDark ? '#1e3a5f' : '#eff6ff'),
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: ink.hairline,
         gap: 12,
       }}
     >
@@ -145,19 +147,19 @@ export default function NotificationsScreen({ navigation }: Props) {
           width: 42,
           height: 42,
           borderRadius: 21,
-          backgroundColor: item.read ? '#f3f4f6' : '#dbeafe',
+          backgroundColor: item.read ? ink.hairline : (ink.isDark ? '#1e40af' : '#dbeafe'),
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         {(() => {
           const kind = notificationIcon(item.title);
-          if (kind === 'wishlist') return <Bookmark size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
-          if (kind === 'accepted') return <Star size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
-          if (kind === 'meetup') return <MapPin size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
-          if (kind === 'confirmed') return <CheckCircle size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
-          if (kind === 'swap') return <ArrowsClockwise size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
-          return <ChatCircle size={20} color={item.read ? '#9ca3af' : '#38B6FF'} weight="duotone" />;
+          if (kind === 'wishlist') return <Bookmark size={20} color={item.read ? ink.subtle : '#38B6FF'} weight="duotone" />;
+          if (kind === 'accepted') return <Star size={20} color={item.read ? ink.subtle : '#38B6FF'} weight="duotone" />;
+          if (kind === 'meetup') return <MapPin size={20} color={item.read ? ink.subtle : '#38B6FF'} weight="duotone" />;
+          if (kind === 'confirmed') return <CheckCircle size={20} color={item.read ? ink.subtle : '#38B6FF'} weight="duotone" />;
+          if (kind === 'swap') return <ArrowsClockwise size={20} color={item.read ? ink.subtle : '#38B6FF'} weight="duotone" />;
+          return <ChatCircle size={20} color={item.read ? ink.subtle : '#38B6FF'} weight="duotone" />;
         })()}
       </View>
 
@@ -167,16 +169,16 @@ export default function NotificationsScreen({ navigation }: Props) {
           style={{
             fontSize: 15,
             fontWeight: item.read ? '400' : '700',
-            color: '#1f2937',
+            color: ink.strong,
             marginBottom: 2,
           }}
         >
           {item.title}
         </Text>
-        <Text style={{ fontSize: 14, color: '#6b7280' }} numberOfLines={2}>
+        <Text style={{ fontSize: 14, color: ink.muted }} numberOfLines={2}>
           {item.body}
         </Text>
-        <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+        <Text style={{ fontSize: 12, color: ink.subtle, marginTop: 4 }}>
           {timeAgo(item.created_at)}
         </Text>
       </View>
@@ -197,7 +199,7 @@ export default function NotificationsScreen({ navigation }: Props) {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: ink.isDark ? '#111827' : '#fff' }} edges={['top']}>
       {/* Header */}
       <View
         style={{
@@ -207,13 +209,13 @@ export default function NotificationsScreen({ navigation }: Props) {
           paddingHorizontal: 16,
           paddingVertical: 12,
           borderBottomWidth: 1,
-          borderBottomColor: '#f3f4f6',
+          borderBottomColor: ink.hairline,
         }}
       >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><ArrowLeft size={16} color="#38B6FF" weight="regular" /><Text style={{ fontSize: 16, color: '#38B6FF' }}>Back</Text></View>
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontFamily: fonts.serifSemiBold }}>Notifications</Text>
+        <Text style={{ fontSize: 20, fontFamily: fonts.serifSemiBold, color: ink.heading }}>Notifications</Text>
         {unreadCount > 0 ? (
           <TouchableOpacity onPress={handleMarkAllRead}>
             <Text style={{ fontSize: 14, color: '#38B6FF' }}>Mark all read</Text>
@@ -226,8 +228,8 @@ export default function NotificationsScreen({ navigation }: Props) {
       {error ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingHorizontal: 32 }}>
           <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
-          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load notifications</Text>
-          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <Text style={{ fontSize: 16, color: ink.body, fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>Couldn't load notifications</Text>
+          <Text style={{ fontSize: 14, color: ink.muted, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
           <TouchableOpacity onPress={loadNotifications} style={{ backgroundColor: '#38B6FF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}>
             <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
           </TouchableOpacity>
@@ -240,11 +242,11 @@ export default function NotificationsScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
-            <Bell size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
-            <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151' }}>
+            <Bell size={48} color={ink.subtle} weight="duotone" style={{ marginBottom: 16 }} />
+            <Text style={{ fontSize: 17, fontWeight: '600', color: ink.body }}>
               No notifications yet
             </Text>
-            <Text style={{ fontSize: 15, color: '#6b7280', marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
+            <Text style={{ fontSize: 15, color: ink.muted, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
               You'll be notified about swap requests, messages, and meetup updates
             </Text>
           </View>

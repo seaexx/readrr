@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { MapPin, X } from 'phosphor-react-native';
 import { searchCities, cityDisplayName, CityResult } from '../services/placesService';
+import { useThemeColors } from '../theme/colors';
 
 interface Props {
   value: string;
@@ -12,6 +13,7 @@ interface Props {
 // Type-ahead city field. Free text is still allowed; picking a suggestion
 // also hands back the city's coordinates.
 export default function CityAutocomplete({ value, onChangeText, onSelect }: Props) {
+  const ink = useThemeColors();
   const [results, setResults] = useState<CityResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -51,37 +53,38 @@ export default function CityAutocomplete({ value, onChangeText, onSelect }: Prop
 
   return (
     <View style={{ marginBottom: 16 }}>
-      <View style={styles.inputRow}>
-        <MapPin size={18} color="#9ca3af" weight="duotone" style={{ marginRight: 8 }} />
+      <View style={[styles.inputRow, { borderColor: ink.border }]}>
+        <MapPin size={18} color={ink.subtle} weight="duotone" style={{ marginRight: 8 }} />
         <TextInput
           placeholder="Start typing your city"
+          placeholderTextColor={ink.subtle}
           value={value}
           onChangeText={onChangeText}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           maxLength={100}
           autoCorrect={false}
-          style={{ flex: 1, fontSize: 16 }}
+          style={{ flex: 1, fontSize: 16, color: ink.strong }}
         />
         {searching ? (
           <ActivityIndicator size="small" color="#38B6FF" />
         ) : value.length > 0 ? (
           <TouchableOpacity onPress={() => onChangeText('')} hitSlop={8}>
-            <X size={16} color="#9ca3af" />
+            <X size={16} color={ink.subtle} />
           </TouchableOpacity>
         ) : null}
       </View>
 
       {results.length > 0 && (
-        <View style={styles.dropdown}>
+        <View style={[styles.dropdown, { borderColor: ink.border, backgroundColor: ink.isDark ? '#1f2937' : '#fff' }]}>
           {results.map((c, i) => (
             <TouchableOpacity
               key={c.id}
               onPress={() => handlePick(c)}
-              style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}
+              style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: ink.hairline }]}
             >
-              <Text style={{ fontSize: 15, color: '#1a1a1a' }}>{cityDisplayName(c)}</Text>
-              {c.region && <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 1 }}>{c.region}</Text>}
+              <Text style={{ fontSize: 15, color: ink.heading }}>{cityDisplayName(c)}</Text>
+              {c.region && <Text style={{ fontSize: 13, color: ink.subtle, marginTop: 1 }}>{c.region}</Text>}
             </TouchableOpacity>
           ))}
         </View>

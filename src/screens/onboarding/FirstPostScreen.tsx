@@ -48,10 +48,10 @@ export default function FirstPostScreen({ navigation }: Props) {
   // Book confirmation screen
   if (bookInfo) {
     return (
-      <SafeAreaView className="flex-1 bg-white px-6">
-        <Text className="text-2xl mt-8 mb-6" style={{ fontFamily: fonts.serifBold }}>Your First Book!</Text>
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900 px-6">
+        <Text className="text-2xl mt-8 mb-6 text-black dark:text-white" style={{ fontFamily: fonts.serifBold }}>Your First Book!</Text>
 
-        <View className="flex-row bg-gray-50 rounded-xl p-4 mb-6">
+        <View className="flex-row bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6">
           <BookCover
             coverUrl={bookInfo.cover_image_url}
             width={80}
@@ -59,15 +59,15 @@ export default function FirstPostScreen({ navigation }: Props) {
             style={{ borderRadius: 8, marginRight: 16 }}
           />
           <View className="flex-1 justify-center">
-            <Text className="text-xl font-semibold mb-2">{bookInfo.title}</Text>
-            <Text className="text-gray-500">{bookInfo.author}</Text>
+            <Text className="text-xl font-semibold mb-2 text-black dark:text-white">{bookInfo.title}</Text>
+            <Text className="text-gray-500 dark:text-gray-400">{bookInfo.author}</Text>
           </View>
         </View>
 
         <TouchableOpacity
           onPress={handlePostBook}
           disabled={loading}
-          className={`py-4 rounded-xl ${loading ? 'bg-gray-300' : 'bg-primary'}`}
+          className={`py-4 rounded-xl ${loading ? 'bg-gray-300 dark:bg-gray-700' : 'bg-primary'}`}
         >
           <Text className="text-white text-center font-semibold text-lg">
             {loading ? 'Posting...' : 'Post This Book'}

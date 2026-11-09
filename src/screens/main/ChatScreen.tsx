@@ -32,6 +32,7 @@ import MeetupModal from '../../components/MeetupModal';
 import { sendPushNotification } from '../../services/notificationsService';
 import { Coffee, Books, Storefront, Martini, UsersThree, Buildings, MapPin, Confetti, ChatCircle, Check, PaperPlaneRight, Hourglass } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ComponentType<any>; bg: string; text: string }> = {
   coffee_shop:      { label: 'Coffee Shop',    icon: Coffee,      bg: '#fef3c7', text: '#92400e' },
@@ -48,6 +49,7 @@ interface Props {
 }
 
 export default function ChatScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const route = useRoute();
   const { swapId } = route.params as { swapId: string };
   const session = useAuthStore((state) => state.session);
@@ -315,14 +317,14 @@ export default function ChatScreen({ navigation }: Props) {
       <View className={`mx-4 my-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
         <View
           className={`max-w-[80%] px-4 py-2.5 rounded-2xl ${
-            isOwnMessage ? 'bg-blue-500 rounded-br-sm' : 'bg-gray-200 rounded-bl-sm'
+            isOwnMessage ? 'bg-blue-500 rounded-br-sm' : 'bg-gray-200 dark:bg-gray-700 rounded-bl-sm'
           }`}
         >
-          <Text style={{ fontSize: 16, color: isOwnMessage ? '#fff' : '#1f2937' }}>
+          <Text style={{ fontSize: 16, color: isOwnMessage ? '#fff' : ink.strong }}>
             {message.content}
           </Text>
         </View>
-        <Text style={{ fontSize: 11, color: '#9ca3af', marginTop: 2, marginHorizontal: 4 }}>
+        <Text style={{ fontSize: 11, color: ink.subtle, marginTop: 2, marginHorizontal: 4 }}>
           {time}
         </Text>
       </View>
@@ -339,19 +341,19 @@ export default function ChatScreen({ navigation }: Props) {
   // Completed swap screen
   if (swap.status === 'completed') {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-        <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+        <View className="flex-row items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800">
           <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3">
             <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold }}>Swap Complete</Text>
+          <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: ink.heading }}>Swap Complete</Text>
         </View>
         <View className="flex-1 items-center justify-center px-8">
           <Confetti size={64} color="#38B6FF" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, marginBottom: 8, textAlign: 'center' }}>
+          <Text style={{ fontSize: 26, fontFamily: fonts.serifSemiBold, color: ink.heading, marginBottom: 8, textAlign: 'center' }}>
             Swap Complete!
           </Text>
-          <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center', marginBottom: 24 }}>
+          <Text style={{ fontSize: 16, color: ink.muted, textAlign: 'center', marginBottom: 24 }}>
             You successfully swapped "{swap.post?.title}" with @{otherUser?.username}
           </Text>
           <TouchableOpacity
@@ -400,7 +402,7 @@ export default function ChatScreen({ navigation }: Props) {
             marginBottom: 4,
             borderWidth: 1.5,
             borderStyle: 'dashed',
-            borderColor: '#d1d5db',
+            borderColor: ink.border,
             borderRadius: 12,
             padding: 12,
             flexDirection: 'row',
@@ -409,8 +411,8 @@ export default function ChatScreen({ navigation }: Props) {
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <MapPin size={14} color="#6b7280" weight="regular" />
-            <Text style={{ fontSize: 14, color: '#6b7280' }}>Meet somewhere safe?</Text>
+            <MapPin size={14} color={ink.muted} weight="regular" />
+            <Text style={{ fontSize: 14, color: ink.muted }}>Meet somewhere safe?</Text>
           </View>
           <TouchableOpacity
             onPress={() => { setIsCounterProposal(false); setShowMeetupModal(true); }}
@@ -427,13 +429,13 @@ export default function ChatScreen({ navigation }: Props) {
     const VenueIcon = categoryMeta?.icon ?? MapPin;
     const venueRow = (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-        <VenueIcon size={22} color={categoryMeta?.text ?? '#4b5563'} weight="regular" />
+        <VenueIcon size={22} color={categoryMeta?.text ?? ink.secondary} weight="regular" />
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: '#1f2937' }}>
+          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: ink.strong }}>
             {swap.meetup_venue_name}
           </Text>
           {swap.meetup_venue_address && (
-            <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }} numberOfLines={1}>
+            <Text style={{ fontSize: 12, color: ink.muted, marginTop: 1 }} numberOfLines={1}>
               {swap.meetup_venue_address}
             </Text>
           )}
@@ -463,23 +465,23 @@ export default function ChatScreen({ navigation }: Props) {
             marginHorizontal: 12,
             marginTop: 8,
             marginBottom: 4,
-            backgroundColor: '#eff6ff',
+            backgroundColor: ink.isDark ? '#1e3a5f' : '#eff6ff',
             borderRadius: 12,
             padding: 12,
             borderWidth: 1,
-            borderColor: '#bfdbfe',
+            borderColor: ink.isDark ? '#1e40af' : '#bfdbfe',
           }}
         >
           {venueRow}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 13, color: '#3b82f6' }}>
+            <Text style={{ fontSize: 13, color: ink.isDark ? '#93c5fd' : '#3b82f6' }}>
               Waiting for @{otherUser?.username} to confirm…
             </Text>
             <TouchableOpacity
               onPress={() => { setIsCounterProposal(true); setShowMeetupModal(true); }}
               disabled={meetupLoading}
             >
-              <Text style={{ fontSize: 13, color: '#6b7280' }}>Change</Text>
+              <Text style={{ fontSize: 13, color: ink.muted }}>Change</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -494,14 +496,14 @@ export default function ChatScreen({ navigation }: Props) {
             marginHorizontal: 12,
             marginTop: 8,
             marginBottom: 4,
-            backgroundColor: '#fff7ed',
+            backgroundColor: ink.isDark ? '#4a2a12' : '#fff7ed',
             borderRadius: 12,
             padding: 12,
             borderWidth: 1,
-            borderColor: '#fed7aa',
+            borderColor: ink.isDark ? '#9a3412' : '#fed7aa',
           }}
         >
-          <Text style={{ fontSize: 12, color: '#9a3412', marginBottom: 8, fontWeight: '600' }}>
+          <Text style={{ fontSize: 12, color: ink.isDark ? '#fdba74' : '#9a3412', marginBottom: 8, fontWeight: '600' }}>
             @{otherUser?.username} suggested a meetup spot:
           </Text>
           {venueRow}
@@ -528,13 +530,13 @@ export default function ChatScreen({ navigation }: Props) {
               disabled={meetupLoading}
               style={{
                 flex: 1,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: ink.hairline,
                 borderRadius: 8,
                 paddingVertical: 8,
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: ink.body }}>
                 Suggest Different
               </Text>
             </TouchableOpacity>
@@ -550,31 +552,31 @@ export default function ChatScreen({ navigation }: Props) {
           marginHorizontal: 12,
           marginTop: 8,
           marginBottom: 4,
-          backgroundColor: '#f0fdf4',
+          backgroundColor: ink.isDark ? '#14432a' : '#f0fdf4',
           borderRadius: 12,
           padding: 12,
           borderWidth: 1,
-          borderColor: '#bbf7d0',
+          borderColor: ink.isDark ? '#166534' : '#bbf7d0',
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-          <Check size={12} color="#15803d" weight="bold" />
-          <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '600' }}>
+          <Check size={12} color={ink.isDark ? '#86efac' : '#15803d'} weight="bold" />
+          <Text style={{ fontSize: 12, color: ink.isDark ? '#86efac' : '#15803d', fontWeight: '600' }}>
             Meetup confirmed
           </Text>
         </View>
         {venueRow}
         <TouchableOpacity onPress={handleClearMeetup} disabled={meetupLoading}>
-          <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Change plans?</Text>
+          <Text style={{ fontSize: 12, color: ink.subtle, marginTop: 4 }}>Change plans?</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
+      <View className="flex-row items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800">
         <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3">
           <Text style={{ fontSize: 16, color: '#38B6FF' }}>← Back</Text>
         </TouchableOpacity>
@@ -584,8 +586,8 @@ export default function ChatScreen({ navigation }: Props) {
           size={36}
         />
         <View className="ml-3 flex-1">
-          <Text style={{ fontSize: 16, fontWeight: '600' }}>@{otherUser?.username}</Text>
-          <Text style={{ fontSize: 13, color: '#6b7280' }} numberOfLines={1}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: ink.heading }}>@{otherUser?.username}</Text>
+          <Text style={{ fontSize: 13, color: ink.muted }} numberOfLines={1}>
             {swap.post?.title}
           </Text>
         </View>
@@ -593,18 +595,18 @@ export default function ChatScreen({ navigation }: Props) {
 
       {/* Completion Status Banner */}
       {(myConfirmation || theirConfirmation) && swap.status === 'accepted' && (
-        <View className="bg-yellow-50 px-4 py-2 border-b border-yellow-100 flex-row items-center justify-center" style={{ gap: 6 }}>
+        <View className="bg-yellow-50 dark:bg-yellow-950 px-4 py-2 border-b border-yellow-100 dark:border-yellow-900 flex-row items-center justify-center" style={{ gap: 6 }}>
           {myConfirmation && !theirConfirmation ? (
             <>
-              <Check size={13} color="#92400e" weight="bold" />
-              <Text style={{ fontSize: 13, color: '#92400e', textAlign: 'center' }}>
+              <Check size={13} color={ink.isDark ? '#fcd34d' : '#92400e'} weight="bold" />
+              <Text style={{ fontSize: 13, color: ink.isDark ? '#fcd34d' : '#92400e', textAlign: 'center' }}>
                 You confirmed. Waiting for other person...
               </Text>
             </>
           ) : !myConfirmation && theirConfirmation ? (
             <>
-              <Hourglass size={13} color="#92400e" weight="regular" />
-              <Text style={{ fontSize: 13, color: '#92400e', textAlign: 'center' }}>
+              <Hourglass size={13} color={ink.isDark ? '#fcd34d' : '#92400e'} weight="regular" />
+              <Text style={{ fontSize: 13, color: ink.isDark ? '#fcd34d' : '#92400e', textAlign: 'center' }}>
                 Other person confirmed. Your turn to confirm!
               </Text>
             </>
@@ -631,8 +633,8 @@ export default function ChatScreen({ navigation }: Props) {
           onLayout={() => flatListRef.current?.scrollToEnd()}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
-              <ChatCircle size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
-              <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', paddingHorizontal: 40 }}>
+              <ChatCircle size={48} color={ink.subtle} weight="duotone" style={{ marginBottom: 16 }} />
+              <Text style={{ fontSize: 15, color: ink.muted, textAlign: 'center', paddingHorizontal: 40 }}>
                 Start chatting to arrange your book swap!
               </Text>
             </View>
@@ -644,15 +646,15 @@ export default function ChatScreen({ navigation }: Props) {
           <TouchableOpacity
             onPress={handleMarkComplete}
             disabled={completing || (myConfirmation && !theirConfirmation)}
-            className={`mx-4 py-3 rounded-xl ${myConfirmation ? 'bg-gray-200' : 'bg-green-500'}`}
+            className={`mx-4 py-3 rounded-xl ${myConfirmation ? 'bg-gray-200 dark:bg-gray-700' : 'bg-green-500'}`}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              {!completing && <Check size={15} color={myConfirmation ? '#6b7280' : '#fff'} weight="bold" />}
+              {!completing && <Check size={15} color={myConfirmation ? ink.muted : '#fff'} weight="bold" />}
               <Text
                 style={{
                   fontSize: 15,
                   fontWeight: '600',
-                  color: myConfirmation ? '#6b7280' : '#fff',
+                  color: myConfirmation ? ink.muted : '#fff',
                   textAlign: 'center',
                 }}
               >
@@ -668,40 +670,41 @@ export default function ChatScreen({ navigation }: Props) {
 
         {/* Message input */}
         {anyoneConfirmed ? (
-          <View className="px-4 border-t border-gray-100 bg-gray-50" style={{ paddingTop: 16, paddingBottom: keyboardVisible ? 16 : 60 }}>
-            <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
+          <View className="px-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800" style={{ paddingTop: 16, paddingBottom: keyboardVisible ? 16 : 60 }}>
+            <Text style={{ fontSize: 14, color: ink.muted, textAlign: 'center' }}>
               {myConfirmation
                 ? 'Chat disabled. Waiting for other person to confirm swap.'
                 : 'Chat disabled. Please confirm the swap to complete.'}
             </Text>
           </View>
         ) : (
-          <View className="flex-row items-end px-4 border-t border-gray-100 bg-white" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>
+          <View className="flex-row items-end px-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" style={{ paddingTop: 10, paddingBottom: keyboardVisible ? 10 : 60 }}>
             <TextInput
               value={newMessage}
               onChangeText={setNewMessage}
               placeholder="Type a message..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={ink.subtle}
               multiline
               maxLength={1000}
               style={{
                 flex: 1,
                 maxHeight: 100,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: ink.surface,
                 borderRadius: 20,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 fontSize: 16,
+                color: ink.strong,
               }}
             />
             <TouchableOpacity
               onPress={handleSend}
               disabled={!newMessage.trim() || sending}
               className={`ml-2 w-10 h-10 rounded-full items-center justify-center ${
-                newMessage.trim() ? 'bg-blue-500' : 'bg-gray-200'
+                newMessage.trim() ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'
               }`}
             >
-              <PaperPlaneRight size={18} color={newMessage.trim() ? '#fff' : '#9ca3af'} weight="fill" />
+              <PaperPlaneRight size={18} color={newMessage.trim() ? '#fff' : ink.subtle} weight="fill" />
             </TouchableOpacity>
           </View>
         )}

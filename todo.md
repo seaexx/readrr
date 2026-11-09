@@ -141,8 +141,15 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
         once they've opened the Feed Swaps tab at least once (to store their location).
 
 ### P3 — polish (nice, not blocking)
-- [ ] **Dark mode** (readers read at night; `userInterfaceStyle` is light-only; color tokens
-      centralized in `src/theme/fonts.ts` to ease this).
+- [x] **Dark mode ⭐ — BUILT.** NativeWind `darkMode: 'class'` + `colorScheme` (persisted via
+      `src/theme/colorSchemePreference.ts`, AsyncStorage key `theme_preference`); System/Light/Dark
+      picker in Profile's footer. `src/theme/colors.ts` (`useThemeColors`) gives inline-style call
+      sites (most of the app sets color via `style`, not className) a reactive gray-scale palette
+      mirroring Tailwind's. React Navigation theme + tab bar colors wired in `RootNavigator`.
+      Applied across every screen/component; verified with a clean `tsc --noEmit`.
+  - [ ] **Needs real-device/simulator visual QA** — not run in this environment (no simulator).
+        Check status bar bar icon color in dark mode (`StatusBar style="auto"` should adapt, but
+        confirm), and the meetup-card / banner color states in `ChatScreen`/`FeedScreen` for contrast.
 - [ ] **Skeleton loaders + micro-interactions** (like / "swap confirmed" moments; needs an anim lib).
 - [ ] **Accessibility labels** (currently zero).
 - [ ] **Chat send-failure copy** for blocked users (generic alert today).

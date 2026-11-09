@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import { supabase } from '../../config/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { Books, WarningCircle } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
+import { ThemePreference, getThemePreference, setThemePreference } from '../../theme/colorSchemePreference';
 import { getUserPosts, deletePost, updatePostAvailability } from '../../services/postsService';
 import { getPostSwapImpact } from '../../services/swapsService';
 import { Post } from '../../models/Post';
@@ -36,6 +38,15 @@ export default function ProfileScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'swaps'>('posts');
   const [error, setError] = useState<string | null>(null);
+  const ink = useThemeColors();
+  const [themePref, setThemePref] = useState<ThemePreference>('system');
+  useEffect(() => {
+    getThemePreference().then(setThemePref);
+  }, []);
+  const handleThemeChange = (pref: ThemePreference) => {
+    setThemePref(pref);
+    setThemePreference(pref);
+  };
   useFocusEffect(
     useCallback(() => {
       if (profile) {
@@ -143,8 +154,8 @@ export default function ProfileScreen({ navigation }: Props) {
 
   if (!profile) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <Text>Loading profile...</Text>
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900 items-center justify-center">
+        <Text style={{ color: ink.body }}>Loading profile...</Text>
       </SafeAreaView>
     );
   }
@@ -154,12 +165,12 @@ export default function ProfileScreen({ navigation }: Props) {
       {/* Profile hero */}
       <View className="items-center px-6 pt-2 pb-5">
         <Avatar avatarUrl={profile.avatar_url} username={profile.username} size={96} />
-        <Text style={{ fontSize: 24, fontFamily: fonts.serifSemiBold, color: '#1a1a1a', marginTop: 14 }}>@{profile.username}</Text>
+        <Text style={{ fontSize: 24, fontFamily: fonts.serifSemiBold, color: ink.heading, marginTop: 14 }}>@{profile.username}</Text>
         {profile.city && (
-          <Text style={{ fontSize: 14, color: '#9ca3af', marginTop: 4 }}>{profile.city}</Text>
+          <Text style={{ fontSize: 14, color: ink.subtle, marginTop: 4 }}>{profile.city}</Text>
         )}
         {profile.bio && (
-          <Text style={{ fontSize: 15, color: '#4b5563', textAlign: 'center', marginTop: 12, lineHeight: 21 }}>
+          <Text style={{ fontSize: 15, color: ink.secondary, textAlign: 'center', marginTop: 12, lineHeight: 21 }}>
             {profile.bio}
           </Text>
         )}
@@ -168,9 +179,9 @@ export default function ProfileScreen({ navigation }: Props) {
         <View className="flex-row mt-5" style={{ gap: 10 }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('EditProfile')}
-            className="border border-gray-300 px-6 py-2.5 rounded-full"
+            className="border border-gray-300 dark:border-gray-600 px-6 py-2.5 rounded-full"
           >
-            <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Edit Profile</Text>
+            <Text style={{ fontSize: 14, fontWeight: '500', color: ink.body }}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Shelf')}
@@ -185,21 +196,21 @@ export default function ProfileScreen({ navigation }: Props) {
       {/* Stats */}
       <View
         className="flex-row mx-6"
-        style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f3f4f6', paddingVertical: 14 }}
+        style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: ink.hairline, paddingVertical: 14 }}
       >
         <View className="flex-1 items-center">
-          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{profile.total_swaps || 0}</Text>
-          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Swaps</Text>
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: ink.heading }}>{profile.total_swaps || 0}</Text>
+          <Text style={{ fontSize: 13, color: ink.subtle, marginTop: 2 }}>Swaps</Text>
         </View>
-        <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
+        <View style={{ width: 1, backgroundColor: ink.hairline }} />
         <View className="flex-1 items-center">
-          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{profile.avg_rating?.toFixed(1) || '0.0'}</Text>
-          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Rating</Text>
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: ink.heading }}>{profile.avg_rating?.toFixed(1) || '0.0'}</Text>
+          <Text style={{ fontSize: 13, color: ink.subtle, marginTop: 2 }}>Rating</Text>
         </View>
-        <View style={{ width: 1, backgroundColor: '#f3f4f6' }} />
+        <View style={{ width: 1, backgroundColor: ink.hairline }} />
         <View className="flex-1 items-center">
-          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: '#1a1a1a' }}>{postsLoaded ? posts.length : '–'}</Text>
-          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>Books</Text>
+          <Text style={{ fontSize: 22, fontFamily: fonts.serifSemiBold, color: ink.heading }}>{postsLoaded ? posts.length : '–'}</Text>
+          <Text style={{ fontSize: 13, color: ink.subtle, marginTop: 2 }}>Books</Text>
         </View>
       </View>
 
@@ -210,7 +221,7 @@ export default function ProfileScreen({ navigation }: Props) {
           className="flex-1 py-3 items-center"
           style={activeTab === 'posts' ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
         >
-          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'posts' ? '#38B6FF' : '#9ca3af' }}>
+          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'posts' ? '#38B6FF' : ink.subtle }}>
             {postsLoaded ? `Posts (${socialPosts.length})` : 'Posts'}
           </Text>
         </TouchableOpacity>
@@ -219,7 +230,7 @@ export default function ProfileScreen({ navigation }: Props) {
           className="flex-1 py-3 items-center"
           style={activeTab === 'swaps' ? { borderBottomWidth: 2, borderColor: '#38B6FF' } : undefined}
         >
-          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'swaps' ? '#38B6FF' : '#9ca3af' }}>
+          <Text style={{ fontSize: 16, fontFamily: fonts.serifSemiBold, color: activeTab === 'swaps' ? '#38B6FF' : ink.subtle }}>
             {postsLoaded ? `Listed (${swapPosts.length})` : 'Listed'}
           </Text>
         </TouchableOpacity>
@@ -229,11 +240,11 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const renderEmpty = () => (
     <View className="items-center py-12 px-6">
-      <Books size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
-      <Text style={{ fontSize: 17, color: '#6b7280', marginBottom: 8 }}>
+      <Books size={48} color={ink.subtle} weight="duotone" style={{ marginBottom: 16 }} />
+      <Text style={{ fontSize: 17, color: ink.muted, marginBottom: 8 }}>
         {activeTab === 'posts' ? 'No posts yet' : 'No swaps yet'}
       </Text>
-      <Text style={{ fontSize: 15, color: '#9ca3af', textAlign: 'center' }}>
+      <Text style={{ fontSize: 15, color: ink.subtle, textAlign: 'center' }}>
         {activeTab === 'posts'
           ? 'Share what you\'re reading!'
           : 'Post a book for swap!'}
@@ -347,24 +358,48 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const renderFooter = () => (
     <View className="px-6 pt-8 pb-4">
+      {/* Appearance */}
+      <Text style={{ fontSize: 13, color: ink.subtle, marginBottom: 8 }}>Appearance</Text>
+      <View className="flex-row mb-6" style={{ gap: 8 }}>
+        {(['system', 'light', 'dark'] as ThemePreference[]).map((option) => {
+          const selected = themePref === option;
+          return (
+            <TouchableOpacity
+              key={option}
+              onPress={() => handleThemeChange(option)}
+              className="flex-1 py-2.5 rounded-xl items-center"
+              style={{
+                borderWidth: 1,
+                borderColor: selected ? '#38B6FF' : ink.border,
+                backgroundColor: selected ? '#38B6FF' : 'transparent',
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: selected ? '#fff' : ink.body, textTransform: 'capitalize' }}>
+                {option}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <TouchableOpacity
         onPress={handleSignOut}
-        className="border border-gray-300 py-3.5 rounded-xl"
+        className="border border-gray-300 dark:border-gray-600 py-3.5 rounded-xl"
       >
-        <Text style={{ textAlign: 'center', fontSize: 15, fontWeight: '600', color: '#374151' }}>
+        <Text style={{ textAlign: 'center', fontSize: 15, fontWeight: '600', color: ink.body }}>
           Sign Out
         </Text>
       </TouchableOpacity>
 
       <View className="flex-row justify-center mt-6" style={{ gap: 20 }}>
         <Text
-          style={{ fontSize: 13, color: '#9ca3af' }}
+          style={{ fontSize: 13, color: ink.subtle }}
           onPress={() => Linking.openURL('https://readrr.app/terms')}
         >
           Terms
         </Text>
         <Text
-          style={{ fontSize: 13, color: '#9ca3af' }}
+          style={{ fontSize: 13, color: ink.subtle }}
           onPress={() => Linking.openURL('https://readrr.app/privacy')}
         >
           Privacy
@@ -392,10 +427,10 @@ export default function ProfileScreen({ navigation }: Props) {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
       {/* Header */}
       <View className="px-4 py-3">
-        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold }}>Profile</Text>
+        <Text style={{ fontSize: 30, fontFamily: fonts.serifSemiBold, color: ink.heading }}>Profile</Text>
       </View>
 
       <ScrollView
@@ -408,10 +443,10 @@ export default function ProfileScreen({ navigation }: Props) {
         {error ? (
           <View className="items-center py-12 px-6">
             <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
-            <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>
+            <Text style={{ fontSize: 16, color: ink.body, fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>
               Couldn't load posts
             </Text>
-            <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 12 }}>{error}</Text>
+            <Text style={{ fontSize: 14, color: ink.muted, textAlign: 'center', marginBottom: 12 }}>{error}</Text>
             <TouchableOpacity onPress={loadPosts} className="bg-primary px-6 py-3 rounded-xl">
               <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
             </TouchableOpacity>

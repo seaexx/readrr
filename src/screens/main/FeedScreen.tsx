@@ -31,6 +31,7 @@ import { reportPost } from '../../services/reportService';
 import { getWantToReadTitles, normalizeTitle } from '../../services/shelfService';
 import { Heart, ChatCircle, Bell, MapPin, DotsThree, Books, ArrowsClockwise, WarningCircle, Bookmark, ArrowUp } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 
 interface Props {
   navigation: any;
@@ -58,6 +59,7 @@ interface PostWithEngagement extends Post {
 }
 
 export default function FeedScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const session = useAuthStore((state) => state.session);
   const hasPosted = useAuthStore((state) => state.hasPosted);
   const [activeTab, setActiveTab] = useState<TabType>('feed');
@@ -489,7 +491,7 @@ export default function FeedScreen({ navigation }: Props) {
               username={post.user?.username || 'User'}
               size={30}
             />
-            <Text style={{ fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1 }} numberOfLines={1}>
+            <Text style={{ fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1, color: ink.heading }} numberOfLines={1}>
               @{post.user?.username}
             </Text>
           </TouchableOpacity>
@@ -519,7 +521,7 @@ export default function FeedScreen({ navigation }: Props) {
               }}
               style={{ padding: 4 }}
             >
-              <DotsThree size={18} color="#9ca3af" weight="bold" />
+              <DotsThree size={18} color={ink.subtle} weight="bold" />
             </TouchableOpacity>
           )}
         </View>
@@ -537,10 +539,10 @@ export default function FeedScreen({ navigation }: Props) {
               width: CARD_WIDTH,
               height: COVER_HEIGHT,
               borderRadius: 8,
-              backgroundColor: '#ffffff',
+              backgroundColor: ink.isDark ? '#1f2937' : '#ffffff',
               shadowColor: '#1e293b',
               shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.18,
+              shadowOpacity: ink.isDark ? 0.4 : 0.18,
               shadowRadius: 10,
               elevation: 5,
             }}
@@ -551,7 +553,7 @@ export default function FeedScreen({ navigation }: Props) {
                 height: '100%',
                 borderRadius: 8,
                 overflow: 'hidden',
-                backgroundColor: '#f3f4f6',
+                backgroundColor: ink.hairline,
               }}
             >
               <BookCover
@@ -576,7 +578,7 @@ export default function FeedScreen({ navigation }: Props) {
 
         {/* Book Title - Dynamic font size */}
         <Text
-          style={{ fontSize: getTitleFontSize(post.title) + 1, fontFamily: fonts.serifMedium, color: '#1a1a1a', lineHeight: getTitleFontSize(post.title) + 6, marginBottom: 2, textAlign: 'center' }}
+          style={{ fontSize: getTitleFontSize(post.title) + 1, fontFamily: fonts.serifMedium, color: ink.heading, lineHeight: getTitleFontSize(post.title) + 6, marginBottom: 2, textAlign: 'center' }}
           numberOfLines={2}
         >
           {post.title}
@@ -584,7 +586,7 @@ export default function FeedScreen({ navigation }: Props) {
 
         {/* Author */}
         {post.author && (
-          <Text style={{ fontSize: 13, color: '#4b5563', marginBottom: 6, textAlign: 'center' }} numberOfLines={1}>
+          <Text style={{ fontSize: 13, color: ink.secondary, marginBottom: 6, textAlign: 'center' }} numberOfLines={1}>
             {post.author}
           </Text>
         )}
@@ -599,7 +601,7 @@ export default function FeedScreen({ navigation }: Props) {
               activeOpacity={0.7}
             >
               <Heart size={20} color={post.hasLiked ? '#E54B4B' : '#0072DD'} weight={post.hasLiked ? 'fill' : 'regular'} style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 14, color: '#374151', fontWeight: '500' }}>
+              <Text style={{ fontSize: 14, color: ink.body, fontWeight: '500' }}>
                 {post.likeCount}
               </Text>
             </TouchableOpacity>
@@ -614,7 +616,7 @@ export default function FeedScreen({ navigation }: Props) {
               activeOpacity={0.7}
             >
               <ChatCircle size={20} color="#0072DD" weight="regular" style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 14, color: '#374151', fontWeight: '500' }}>
+              <Text style={{ fontSize: 14, color: ink.body, fontWeight: '500' }}>
                 {post.commentCount}
               </Text>
             </TouchableOpacity>
@@ -637,8 +639,8 @@ export default function FeedScreen({ navigation }: Props) {
             )}
             {post.distance_miles != null && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <MapPin size={12} color="#6b7280" weight="regular" />
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>
+                <MapPin size={12} color={ink.muted} weight="regular" />
+                <Text style={{ fontSize: 12, color: ink.muted }}>
                   {post.distance_miles < 0.1 ? '<0.1' : post.distance_miles.toFixed(1)} mi away
                 </Text>
               </View>
@@ -656,14 +658,14 @@ export default function FeedScreen({ navigation }: Props) {
     return (
       <View className="flex-1 items-center justify-center py-20">
         {isSwaps ? (
-        <ArrowsClockwise size={50} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
+        <ArrowsClockwise size={50} color={ink.subtle} weight="duotone" style={{ marginBottom: 16 }} />
       ) : (
-        <Books size={50} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
+        <Books size={50} color={ink.subtle} weight="duotone" style={{ marginBottom: 16 }} />
       )}
-        <Text style={{ fontSize: 20, fontFamily: fonts.serifMedium, color: '#4b5563', marginBottom: 8 }}>
+        <Text style={{ fontSize: 20, fontFamily: fonts.serifMedium, color: ink.secondary, marginBottom: 8 }}>
           {isSwaps ? (noNearby ? 'No nearby swaps' : 'No swaps available') : 'No posts yet'}
         </Text>
-        <Text style={{ fontSize: 15, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 32 }}>
+        <Text style={{ fontSize: 15, color: ink.subtle, textAlign: 'center', paddingHorizontal: 32 }}>
           {isSwaps
             ? noNearby
               ? 'No books within 25 miles. Try the seed accounts or post your own!'
@@ -706,10 +708,10 @@ export default function FeedScreen({ navigation }: Props) {
       body = (
         <View className="flex-1 items-center justify-center px-8">
           <WarningCircle size={48} color="#ef4444" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 19, fontFamily: fonts.serifSemiBold, color: '#374151', textAlign: 'center', marginBottom: 8 }}>
+          <Text style={{ fontSize: 19, fontFamily: fonts.serifSemiBold, color: ink.body, textAlign: 'center', marginBottom: 8 }}>
             Couldn't load {tab === 'feed' ? 'feed' : 'swaps'}
           </Text>
-          <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <Text style={{ fontSize: 15, color: ink.muted, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
           <TouchableOpacity onPress={handleRetry} className="bg-primary px-6 py-3 rounded-xl">
             <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
           </TouchableOpacity>
@@ -719,11 +721,11 @@ export default function FeedScreen({ navigation }: Props) {
       body = (
         <>
           {tab === 'feed' && hasPosted === false && !promptDismissed && (
-            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af', marginBottom: 4 }}>
+            <View className="mx-4 mt-3 mb-1 bg-blue-50 dark:bg-blue-950 rounded-xl p-4 border border-blue-100 dark:border-blue-900">
+              <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: ink.isDark ? '#93c5fd' : '#1e40af', marginBottom: 4 }}>
                 Share what you're reading
               </Text>
-              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, color: ink.isDark ? '#60a5fa' : '#3b82f6', marginBottom: 12 }}>
                 Add your first book so other readers can find you. Browse as long as you like first.
               </Text>
               <View className="flex-row items-center" style={{ gap: 8 }}>
@@ -734,20 +736,20 @@ export default function FeedScreen({ navigation }: Props) {
                   <Text style={{ color: '#fff', fontWeight: '600' }}>Add your first book</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setPromptDismissed(true)} className="px-4 py-2.5">
-                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Later</Text>
+                  <Text style={{ color: ink.muted, fontWeight: '500' }}>Later</Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
           {tab === 'swaps' && locationPromptNeeded && (
-            <View className="mx-4 mt-3 mb-1 bg-blue-50 rounded-xl p-4 border border-blue-100">
+            <View className="mx-4 mt-3 mb-1 bg-blue-50 dark:bg-blue-950 rounded-xl p-4 border border-blue-100 dark:border-blue-900">
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <MapPin size={16} color="#1d4ed8" weight="regular" />
-                <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: '#1e40af' }}>
+                <MapPin size={16} color={ink.isDark ? '#93c5fd' : '#1d4ed8'} weight="regular" />
+                <Text style={{ fontSize: 18, fontFamily: fonts.serifSemiBold, color: ink.isDark ? '#93c5fd' : '#1e40af' }}>
                   See books near you
                 </Text>
               </View>
-              <Text style={{ fontSize: 14, color: '#3b82f6', marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, color: ink.isDark ? '#60a5fa' : '#3b82f6', marginBottom: 12 }}>
                 Readrr uses your location to show swaps within 25 miles. Your exact location is never shared with other readers.
               </Text>
               <View className="flex-row items-center" style={{ gap: 8 }}>
@@ -758,23 +760,23 @@ export default function FeedScreen({ navigation }: Props) {
                   <Text style={{ color: '#fff', fontWeight: '600' }}>Enable location</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { setLocationPromptNeeded(false); setLocationDenied(true); }} className="px-4 py-2.5">
-                  <Text style={{ color: '#6b7280', fontWeight: '500' }}>Not now</Text>
+                  <Text style={{ color: ink.muted, fontWeight: '500' }}>Not now</Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
           {tab === 'swaps' && userLocation && !locationDenied && pagePosts.length > 0 && (
-            <View className="px-4 py-2 bg-blue-50 flex-row items-center justify-center">
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MapPin size={12} color="#1d4ed8" weight="regular" /><Text style={{ fontSize: 12, color: '#1d4ed8' }}>Showing nearby swaps within 25 miles</Text></View>
+            <View className="px-4 py-2 bg-blue-50 dark:bg-blue-950 flex-row items-center justify-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><MapPin size={12} color={ink.isDark ? '#93c5fd' : '#1d4ed8'} weight="regular" /><Text style={{ fontSize: 12, color: ink.isDark ? '#93c5fd' : '#1d4ed8' }}>Showing nearby swaps within 25 miles</Text></View>
             </View>
           )}
           {tab === 'swaps' && locationDenied && (
-            <View className="px-4 py-2 bg-amber-50 flex-row items-center justify-center" style={{ gap: 6, flexWrap: 'wrap' }}>
-              <Text style={{ fontSize: 12, color: '#92400e', textAlign: 'center' }}>
+            <View className="px-4 py-2 bg-amber-50 dark:bg-amber-950 flex-row items-center justify-center" style={{ gap: 6, flexWrap: 'wrap' }}>
+              <Text style={{ fontSize: 12, color: ink.isDark ? '#fcd34d' : '#92400e', textAlign: 'center' }}>
                 Location off — showing all swaps.
               </Text>
               <TouchableOpacity onPress={handleEnableFromBanner} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={{ fontSize: 12, color: '#1d4ed8', fontWeight: '700' }}>Enable location</Text>
+                <Text style={{ fontSize: 12, color: ink.isDark ? '#93c5fd' : '#1d4ed8', fontWeight: '700' }}>Enable location</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -842,9 +844,9 @@ export default function FeedScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
         <Image
           source={require('../../../assets/images/logo.png')}
           style={{ width: 100, height: 50 }}
@@ -857,7 +859,7 @@ export default function FeedScreen({ navigation }: Props) {
           {unreadNotifications > 0 ? (
             <Bell size={26} color="#38B6FF" weight="fill" />
           ) : (
-            <Bell size={26} color="#6b7280" weight="regular" />
+            <Bell size={26} color={ink.muted} weight="regular" />
           )}
           {unreadNotifications > 0 && (
             <View style={{
@@ -874,7 +876,7 @@ export default function FeedScreen({ navigation }: Props) {
       </View>
 
       {/* Tabs */}
-      <View className="flex-row border-b border-gray-200">
+      <View className="flex-row border-b border-gray-200 dark:border-gray-700">
         {(['feed', 'swaps'] as const).map((tab, i) => (
           <TouchableOpacity key={tab} onPress={() => goToTab(tab)} className="flex-1 py-3">
             <Text
@@ -882,7 +884,7 @@ export default function FeedScreen({ navigation }: Props) {
                 fontSize: 17,
                 fontFamily: fonts.serifSemiBold,
                 textAlign: 'center',
-                color: activeTab === tab ? '#38B6FF' : '#6b7280',
+                color: activeTab === tab ? '#38B6FF' : ink.muted,
               }}
             >
               {tab === 'feed' ? 'Feed' : 'Swaps'}

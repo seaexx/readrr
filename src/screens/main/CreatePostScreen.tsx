@@ -8,9 +8,9 @@ interface Props {
 
 export default function CreatePostScreen({ navigation }: Props) {
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
       <View className="px-6 pt-8">
-        <Text className="text-3xl mb-8" style={{ fontFamily: fonts.serifBold }}>Create Post</Text>
+        <Text className="text-3xl mb-8 text-black dark:text-white" style={{ fontFamily: fonts.serifBold }}>Create Post</Text>
 
         {/* Social Post Option */}
         <TouchableOpacity
@@ -31,7 +31,7 @@ export default function CreatePostScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-8">
-          <Text className="text-gray-500 text-center">Cancel</Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-center">Cancel</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

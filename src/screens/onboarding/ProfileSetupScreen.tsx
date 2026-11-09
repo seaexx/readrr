@@ -19,6 +19,7 @@ import { Camera, Check } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
 import { sanitizeUsername, getUsernameError } from '../../utils/validation';
 import { compressImage } from '../../utils/imageCompression';
+import { useThemeColors } from '../../theme/colors';
 
 const styles = StyleSheet.create({
   textInputNoBorder: {
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export default function ProfileSetupScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const [username, setUsername] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState('');
@@ -217,12 +219,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-gray-900"
     >
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <View className="px-6 pt-16">
-          <Text className="text-3xl mb-2 text-center" style={{ fontFamily: fonts.serifBold }}>Create Profile</Text>
-          <Text className="text-gray-500 mb-8 text-center">
+          <Text className="text-3xl mb-2 text-center" style={{ fontFamily: fonts.serifBold, color: ink.heading }}>Create Profile</Text>
+          <Text className="text-gray-500 dark:text-gray-400 mb-8 text-center">
             {profile ? 'Update your profile' : 'Set up your profile to continue'}
           </Text>
 
@@ -234,27 +236,28 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 style={{ width: 100, height: 100, borderRadius: 50 }}
               />
             ) : (
-              <View className="w-24 h-24 rounded-full bg-gray-200 items-center justify-center">
+              <View className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center">
                 <Camera size={32} color="#fff" weight="duotone" />
               </View>
             )}
           </TouchableOpacity>
-          <Text className="text-sm text-gray-500 text-center mb-1">
+          <Text className="text-sm text-gray-500 dark:text-gray-400 text-center mb-1">
             Add photo (optional)
           </Text>
-          <Text className="text-xs text-gray-400 text-center mb-8">Max 3MB</Text>
+          <Text className="text-xs text-gray-400 dark:text-gray-500 text-center mb-8">Max 3MB</Text>
 
           {/* Username Input */}
-          <Text className="text-sm text-gray-600 mb-2">Username</Text>
-          <View style={styles.usernameContainer}>
-            <Text className="text-lg text-gray-500 mr-1">@</Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-300 mb-2">Username</Text>
+          <View style={[styles.usernameContainer, { borderColor: ink.border }]}>
+            <Text className="text-lg text-gray-500 dark:text-gray-400 mr-1">@</Text>
             <TextInput
               placeholder="username"
+              placeholderTextColor={ink.subtle}
               value={username}
               onChangeText={handleUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
-              style={styles.textInputNoBorder}
+              style={[styles.textInputNoBorder, { color: ink.strong }]}
             />
             {checkingUsername && <ActivityIndicator size="small" />}
             {usernameAvailable && !checkingUsername && (
@@ -265,7 +268,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           {usernameError ? (
             <Text className="text-error text-sm mb-4">{usernameError}</Text>
           ) : (
-            <Text className="text-gray-400 text-sm mb-4">
+            <Text className="text-gray-400 dark:text-gray-500 text-sm mb-4">
               Lowercase letters, numbers, and underscores
             </Text>
           )}
@@ -274,7 +277,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             onPress={handleSaveProfile}
             disabled={!usernameAvailable || loading}
             className={`py-4 rounded-xl ${
-              usernameAvailable && !loading ? 'bg-primary' : 'bg-gray-300'
+              usernameAvailable && !loading ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-700'
             }`}
           >
             <Text className="text-white text-center font-semibold text-lg">
@@ -282,7 +285,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             </Text>
           </TouchableOpacity>
 
-          <Text className="text-xs text-gray-500 text-center mt-6">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 text-center mt-6">
             You can add your city and bio later in settings
           </Text>
         </View>

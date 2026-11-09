@@ -30,6 +30,7 @@ import BookFinder from '../../components/BookFinder';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Bookmark, Check, MapPin, Plus, WarningCircle } from 'phosphor-react-native';
 import { fonts } from '../../theme/fonts';
+import { useThemeColors } from '../../theme/colors';
 
 interface Props {
   navigation: any;
@@ -57,6 +58,7 @@ const OTHER_SHELVES: Record<ShelfName, { key: ShelfName; label: string }[]> = {
 };
 
 export default function ShelfScreen({ navigation }: Props) {
+  const ink = useThemeColors();
   const session = useAuthStore((state) => state.session);
   const [activeShelf, setActiveShelf] = useState<ShelfName>('want_to_read');
   const shelfKey = (shelf: ShelfName) => `shelf:${session?.user.id}:${shelf}`;
@@ -192,13 +194,13 @@ export default function ShelfScreen({ navigation }: Props) {
   const renderItem = ({ item }: { item: ShelfItem }) => (
     <TouchableOpacity
       onPress={() => handleItemPress(item)}
-      className="flex-row items-center px-4 py-3 border-b border-gray-100"
+      className="flex-row items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800"
     >
       <BookCover coverUrl={item.cover_image_url} width={44} height={64} style={{ borderRadius: 4 }} />
       <View className="ml-3 flex-1">
-        <Text style={{ fontSize: 16, fontFamily: fonts.serifMedium, color: '#1a1a1a' }} numberOfLines={2}>{item.title}</Text>
+        <Text style={{ fontSize: 16, fontFamily: fonts.serifMedium, color: ink.heading }} numberOfLines={2}>{item.title}</Text>
         {item.author && (
-          <Text style={{ fontSize: 13, color: '#6b7280' }} numberOfLines={1}>{item.author}</Text>
+          <Text style={{ fontSize: 13, color: ink.muted }} numberOfLines={1}>{item.author}</Text>
         )}
         {item.available_nearby && (
           <View className="flex-row items-center mt-1" style={{ gap: 4 }}>
@@ -229,18 +231,18 @@ export default function ShelfScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text className="text-primary text-base">← Back</Text>
         </TouchableOpacity>
-        <Text className="text-lg" style={{ fontFamily: fonts.serifSemiBold }}>My Shelf</Text>
+        <Text className="text-lg" style={{ fontFamily: fonts.serifSemiBold, color: ink.heading }}>My Shelf</Text>
         <TouchableOpacity onPress={() => setFindingBook(true)} style={{ padding: 4 }}>
           <Plus size={22} color="#38B6FF" weight="regular" />
         </TouchableOpacity>
       </View>
 
-      <View className="flex-row border-b border-gray-200">
+      <View className="flex-row border-b border-gray-200 dark:border-gray-700">
         {SHELVES.map((s) => (
           <TouchableOpacity
             key={s.key}
@@ -252,7 +254,7 @@ export default function ShelfScreen({ navigation }: Props) {
                 fontSize: 15,
                 fontFamily: fonts.serifSemiBold,
                 textAlign: 'center',
-                color: activeShelf === s.key ? '#38B6FF' : '#6b7280',
+                color: activeShelf === s.key ? '#38B6FF' : ink.muted,
               }}
             >
               {s.label}
@@ -266,25 +268,25 @@ export default function ShelfScreen({ navigation }: Props) {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-8">
           <WarningCircle size={40} color="#ef4444" weight="duotone" style={{ marginBottom: 12 }} />
-          <Text style={{ fontSize: 16, color: '#374151', fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>
+          <Text style={{ fontSize: 16, color: ink.body, fontWeight: '600', textAlign: 'center', marginBottom: 4 }}>
             Couldn't load shelf
           </Text>
-          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <Text style={{ fontSize: 14, color: ink.muted, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
           <TouchableOpacity onPress={loadShelf} className="bg-primary px-6 py-3 rounded-xl">
             <Text style={{ color: '#fff', fontWeight: '600' }}>Try Again</Text>
           </TouchableOpacity>
         </View>
       ) : items.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Bookmark size={48} color="#9ca3af" weight="duotone" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 17, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
+          <Bookmark size={48} color={ink.subtle} weight="duotone" style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 17, fontWeight: '600', color: ink.body, marginBottom: 8 }}>
             {activeShelf === 'want_to_read'
               ? 'Nothing saved yet'
               : activeShelf === 'reading'
               ? 'Not reading anything'
               : 'No finished books'}
           </Text>
-          <Text style={{ fontSize: 15, color: '#9ca3af', textAlign: 'center', marginBottom: 16 }}>
+          <Text style={{ fontSize: 15, color: ink.subtle, textAlign: 'center', marginBottom: 16 }}>
             {activeShelf === 'want_to_read'
               ? 'Save books you want to read — we’ll flag copies available nearby.'
               : 'Tap + to add a book to this shelf.'}
@@ -302,8 +304,8 @@ export default function ShelfScreen({ navigation }: Props) {
           ListFooterComponent={
             activeShelf === 'want_to_read' ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4 }}>
-                <MapPin size={12} color="#9ca3af" weight="regular" />
-                <Text style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>
+                <MapPin size={12} color={ink.subtle} weight="regular" />
+                <Text style={{ fontSize: 12, color: ink.subtle, textAlign: 'center' }}>
                   Nearby availability needs location access
                 </Text>
               </View>

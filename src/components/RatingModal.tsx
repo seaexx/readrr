@@ -12,6 +12,7 @@ import { submitRating } from '../services/ratingsService';
 import Avatar from './Avatar';
 import { Star } from 'phosphor-react-native';
 import { fonts } from '../theme/fonts';
+import { useThemeColors } from '../theme/colors';
 
 interface Props {
   visible: boolean;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function RatingModal({ visible, swapId, raterId, ratedUser, onDone, onSkip }: Props) {
+  const ink = useThemeColors();
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -48,31 +50,31 @@ export default function RatingModal({ visible, swapId, raterId, ratedUser, onDon
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
-          <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold, textAlign: 'center', marginBottom: 4 }}>
+        <View style={{ backgroundColor: ink.isDark ? '#111827' : '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+          <Text style={{ fontSize: 21, fontFamily: fonts.serifSemiBold, color: ink.heading, textAlign: 'center', marginBottom: 4 }}>
             Rate your swap
           </Text>
-          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 20 }}>
+          <Text style={{ fontSize: 14, color: ink.muted, textAlign: 'center', marginBottom: 20 }}>
             How was your experience?
           </Text>
 
           {/* Rated user */}
           <View style={{ alignItems: 'center', marginBottom: 24 }}>
             <Avatar avatarUrl={ratedUser.avatar_url} username={ratedUser.username} size={64} />
-            <Text style={{ fontSize: 16, fontWeight: '600', marginTop: 8 }}>@{ratedUser.username}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: ink.heading, marginTop: 8 }}>@{ratedUser.username}</Text>
           </View>
 
           {/* Stars */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 12 }}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity key={star} onPress={() => setScore(star)}>
-                <Star size={40} color={star <= score ? '#f59e0b' : '#d1d5db'} weight={star <= score ? 'fill' : 'regular'} />
+                <Star size={40} color={star <= score ? '#f59e0b' : ink.border} weight={star <= score ? 'fill' : 'regular'} />
               </TouchableOpacity>
             ))}
           </View>
 
           {score > 0 && (
-            <Text style={{ textAlign: 'center', fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
+            <Text style={{ textAlign: 'center', fontSize: 14, color: ink.muted, marginBottom: 16 }}>
               {score === 1 ? 'Poor' : score === 2 ? 'Fair' : score === 3 ? 'Good' : score === 4 ? 'Great' : 'Excellent!'}
             </Text>
           )}
@@ -82,15 +84,15 @@ export default function RatingModal({ visible, swapId, raterId, ratedUser, onDon
             value={comment}
             onChangeText={setComment}
             placeholder="Leave a comment (optional)"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={ink.subtle}
             multiline
             maxLength={300}
             style={{
-              backgroundColor: '#f3f4f6',
+              backgroundColor: ink.surface,
               borderRadius: 12,
               padding: 12,
               fontSize: 15,
-              color: '#1f2937',
+              color: ink.strong,
               minHeight: 72,
               textAlignVertical: 'top',
               marginBottom: 20,
@@ -117,7 +119,7 @@ export default function RatingModal({ visible, swapId, raterId, ratedUser, onDon
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onSkip} style={{ alignItems: 'center', padding: 8 }}>
-            <Text style={{ fontSize: 15, color: '#6b7280' }}>Skip</Text>
+            <Text style={{ fontSize: 15, color: ink.muted }}>Skip</Text>
           </TouchableOpacity>
         </View>
       </View>
