@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# Strip AI co-author trailers and "Generated with" lines from commit messages,
+# so commits are attributed to the people who made them.
+#
+# Enabled via: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+msg_file="$1"
+grep -viE '^(co-authored-by:.*(claude|anthropic)|.*generated with .*claude)' "$msg_file" > "$msg_file.tmp" || true
+mv "$msg_file.tmp" "$msg_file"
