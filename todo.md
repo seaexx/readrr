@@ -51,7 +51,7 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [x] **Swap completion races + repeat cancel/decline** (#3, godfrey) — migration **021** applied to the
       live DB 2026-11-26: `confirm_swap_complete()` RPC completes a swap atomically; active-request
       uniqueness is now a partial index (pending/accepted only).
-- [ ] **Move push sending to the server.** Pushes are sent from the *actor's* phone, so a comment only
+- [ ] ⏸ **On hold (2026-11-26, your call): move push sending to the server.** Pushes are sent from the *actor's* phone, so a comment only
       notifies if the commenter runs a recent app version, and every signed-in user can read others'
       `fcm_token` to do it. Send from the DB/Edge Function instead (empty `supabase/functions/
       notification-delivery/` folder is the placeholder), then lock `fcm_token` down.
