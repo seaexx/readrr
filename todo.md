@@ -5,7 +5,7 @@ so we can pause cleanly and resume without re-deriving context. Keep it current.
 
 - **Deep feature audit:** [`docs/PROGRESS.md`](docs/PROGRESS.md) (the "what's built" reference).
 - **This file:** the prioritized "what to do next" list.
-- **Last updated:** 2026-09-22
+- **Last updated:** 2026-11-26
 
 ---
 
@@ -42,12 +42,19 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `eas.json` `env` (all
       profiles). **Rebuild → `eas submit` → TestFlight.** Google Books key left out of git — set it
       as an EAS env var if you want the Google cover fallback in prod (Open Library is primary).
-- [x] **Terms + Privacy drafted** — `web/terms/` + `web/privacy/` (real copy for the actual app).
-      Still to do: replace the `[BRACKETED]` placeholders (entity, contact email, jurisdiction, age),
-      get a legal review, and host so readrr.app/terms + /privacy resolve. See `web/README.md`.
+- [x] **Terms + Privacy live** at readrr.app/terms + /privacy (operator + governing law filled in, #7;
+      footers read "© 2026 Readrr"; Privacy has a "Beta sign-ups on readrr.app" section, 2026-11-26).
+  - [ ] **Legal review** still outstanding — especially the new beta sign-up section.
 - [ ] **Test push + barcode scan on a REAL device** — once the env-fixed build is installed.
 
 ### P1 — correctness / safety before real users
+- [x] **Swap completion races + repeat cancel/decline** (#3, godfrey) — migration **021** applied to the
+      live DB 2026-11-26: `confirm_swap_complete()` RPC completes a swap atomically; active-request
+      uniqueness is now a partial index (pending/accepted only).
+- [ ] **Move push sending to the server.** Pushes are sent from the *actor's* phone, so a comment only
+      notifies if the commenter runs a recent app version, and every signed-in user can read others'
+      `fcm_token` to do it. Send from the DB/Edge Function instead (empty `supabase/functions/
+      notification-delivery/` folder is the placeholder), then lock `fcm_token` down.
 - [x] **Supabase linter: RLS disabled on `public.spatial_ref_sys`** — FIXED by migration 023: PostGIS
       reinstalled in the `extensions` schema (not exposed by the API; REST now 404s the table).
       All 15 locations restored and verified point-for-point; GiST indexes recreated; geo RPCs'
@@ -133,6 +140,28 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       tracks the finger, each page keeps its own list + scroll position.
 - [ ] Verify on device; if any screen still jumps, note which one.
 
+### Website — readrr.app (2026-11-26)
+Static site in `web/`, deployed by the **Cloudflare Worker `readrrapp`** on every push to `main`
+(~2 min). Build settings live in the Cloudflare dashboard; the repo has no wrangler config.
+- [x] **Landing page redesign** (PR #8, live): hero copy covers feed + swaps; tap-to-swap shelf toy;
+      "A feed made of books" section with an interactive feed phone (post / like / save); sticky phone
+      walkthrough of the six swap steps (inline on mobile); "Also in the app" cards; reduced-motion safe.
+- [x] **Beta sign-ups saved to Supabase.** Migration **024** `beta_signups` (RLS on, no policies, no
+      anon/authenticated grants) + Edge Function **`join-beta`** (`--no-verify-jwt`, service role,
+      honeypot, repeat emails ignored). Page holds no Supabase key; falls back to a prefilled email
+      if the call fails or takes >15s. Verified end to end on the live site; test rows deleted.
+  - See sign-ups: Table Editor → `beta_signups`, or
+    `supabase db query --linked "select email, city, phone, postage, created_at from beta_signups order by created_at desc"`
+  - Set `invited_at` when you send someone a TestFlight invite.
+  - `join-beta` only accepts origins `readrr.app`, `www.readrr.app`, `localhost:8765` (`ALLOWED_ORIGINS`
+    in `supabase/functions/join-beta/index.ts`); redeploy with
+    `supabase functions deploy join-beta --no-verify-jwt --use-api` after changing it.
+- [ ] **Cloudflare PR preview builds fail** ("missing a preview block"; the non-production deploy
+      command has no wrangler config). Production deploys from `main` are fine. Fix: add a
+      `wrangler.jsonc` for `readrrapp` serving `web/` (needs the dashboard's Build / Deploy /
+      Non-production deploy commands first), or turn off non-production builds.
+- Local preview: `python3 -m http.server 8765 --directory web`, then open http://localhost:8765.
+
 ### P2 — retention (first real feature investment)
 - [x] **Wishlist match alerts ⭐ — BUILT (code + migration 018 applied).** When a swap post is
       created, readers who have that book on their want-to-read shelf within 25 mi get a push +
@@ -193,7 +222,9 @@ re-run that once on a fresh clone).
       and update your local `.env.local`. Book lookup (Google-only) needs this in the build.
 
 ## Database — Supabase CLI (linked ✅)
-Linked and migrated. **Ongoing workflow:** Claude writes `supabase/migrations/0NN_*.sql`, then
+Linked and migrated through **024** (021 swap completion · 022 spatial_ref_sys attempt, no-op ·
+023 PostGIS → `extensions` · 024 beta_signups). Run one-off SQL with `supabase db query --linked "<sql>"`.
+CLI here is v2.109; v3.x is available. **Ongoing workflow:** Claude writes `supabase/migrations/0NN_*.sql`, then
 `supabase db push` applies it to the live DB — no more hand-applying. Re-run
 [`supabase/verify_migrations.sql`](supabase/verify_migrations.sql) anytime to confirm object state.
 
@@ -218,7 +249,8 @@ App opens to login (Feed is auth-gated). Push + barcode need a real device.
   body + button labels stay system sans.
 - **Palette:** brand blue `#38B6FF` + white. No warm/paper tones (decided against).
 - **Migrations:** numbered `0NN_name.sql`, applied via `supabase db push`.
-- **Commits:** end with `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
+- **Commits:** no AI co-author / "Generated with" lines; `.githooks/commit-msg` strips them (#6).
+- **PRs:** squash-merged into `main`. `gh` isn't installed here; PRs go through the GitHub web UI.
 
 ## Task chips (one click to spin off)
 Wishlist match alerts · Terms + Privacy pages · Delete-cascade + dup-post fixes · Wire/remove Follows
