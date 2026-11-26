@@ -52,7 +52,7 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
       reinstalled in the `extensions` schema (not exposed by the API; REST now 404s the table).
       All 15 locations restored and verified point-for-point; GiST indexes recreated; geo RPCs'
       search_path now `public, extensions`. 022 (RLS attempt) was a no-op, table owned by supabase_admin.
-- [ ] **Drop `backup.locations_20261126`** (and the `backup` schema) once Swaps/nearby is verified on device.
+- [x] Backup table `backup.locations_20261126` + `backup` schema dropped after Swaps verified on device (2026-11-26).
 - [x] **Safe swap-post delete + duplicate-post prevention.** DONE — deleting a swap listing that
       has requests/chat now warns and offers "Hide instead" (`getPostSwapImpact` + ProfileScreen
       delete flow); duplicate active listings are blocked by a partial unique index (migration 019,
