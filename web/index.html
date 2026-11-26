@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Readrr · Swap books with readers near you</title>
-  <meta name="description" content="Readrr is a book-swapping app for local readers. Scan a book, list it, and swap it in person somewhere public. The iPhone beta is open: email support@readrr.app to join." />
+  <title>Readrr · Share what you read, swap what you've finished</title>
+  <meta name="description" content="Readrr is a home for readers. Post what you're reading, follow what readers near you love, and swap the books you've finished in person. The iPhone beta is open." />
   <meta property="og:title" content="Readrr · Pass the book on" />
-  <meta property="og:description" content="Swap books with readers near you. The iPhone beta is open." />
+  <meta property="og:description" content="Share what you're reading. Swap what you've finished. The iPhone beta is open." />
   <meta property="og:image" content="https://readrr.app/og.png" />
   <meta property="og:url" content="https://readrr.app/" />
   <meta name="theme-color" content="#FFFFFF" />
@@ -148,6 +148,55 @@
     .toy-foot strong { font-weight: 600; }
     .toy-foot .count { font-family: var(--mono); font-size: 13px; color: var(--muted); display: block; margin-top: 4px; }
 
+    /* The feed */
+    .feed { padding-block: 24px 88px; display: grid; grid-template-columns: .95fr 1.05fr; gap: 56px; align-items: center; }
+    .feed-copy h2 { margin: 10px 0 18px; font-size: clamp(36px, 5vw, 56px); line-height: 1.02; font-weight: 500; letter-spacing: -0.01em; }
+    .feed-copy .label { color: var(--brand-ink); }
+    .feed-copy p { margin: 0 0 22px; max-width: 30em; }
+    .feed-points { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+    .feed-points li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; font-size: 18px; line-height: 1.45; }
+    .feed-points .ico { width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--ink); background: var(--brand-soft); display: grid; place-items: center; font-size: 16px; }
+    .feed-demo { justify-self: center; width: 100%; max-width: 420px; }
+    .feed-demo .phone { width: 100%; max-width: 360px; height: 640px; }
+    .feed-demo .screen-stack { display: flex; flex-direction: column; padding: 34px 12px 0; }
+    .feed-demo .screen-stack::before { content: ""; position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 76px; height: 18px; border-radius: 10px; background: var(--ink); }
+    .f-tabs { display: flex; border-bottom: 1px solid var(--rule); margin: 0 -12px 10px; }
+    .f-tabs span { flex: 1; text-align: center; padding: 6px 0 8px; font-family: var(--serif); font-size: 16px; font-weight: 600; color: var(--muted); }
+    .f-tabs span.on { color: var(--brand); box-shadow: inset 0 -2px 0 var(--brand); }
+    .composer { display: flex; gap: 8px; margin-bottom: 12px; }
+    .composer input {
+      flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 9px 11px;
+      border: 1.2px solid var(--ink); border-radius: 8px; background: var(--paper);
+    }
+    .composer input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+    .composer button {
+      font-family: var(--mono); font-weight: 700; font-size: 12px; padding: 0 12px; cursor: pointer;
+      background: var(--brand); color: var(--ink); border: 1.2px solid var(--ink); border-radius: 8px;
+    }
+    .f-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; align-content: start; padding-bottom: 16px; scrollbar-width: none; }
+    .f-grid::-webkit-scrollbar { display: none; }
+    .f-card { font-size: 12px; min-width: 0; }
+    .f-card.new { animation: postIn .6s var(--ease); }
+    @keyframes postIn { from { opacity: 0; transform: translateY(-14px) scale(.96); } }
+    .f-user { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-family: var(--mono); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .f-av { width: 20px; height: 20px; border-radius: 50%; flex: none; border: 1px solid var(--ink); background: var(--a, var(--brand)); }
+    .f-card .cover { aspect-ratio: 2 / 3; width: 100%; padding: 8px 7px; box-shadow: 2px 3px 0 rgba(17,24,39,.18); }
+    .f-card .cover b { font-size: 14px; }
+    .f-kind { font-family: var(--mono); font-size: 9.5px; color: var(--brand-ink); margin-top: 6px; display: block; }
+    .f-title { font-family: var(--serif); font-weight: 600; font-size: 13.5px; line-height: 1.2; margin: 1px 0 2px; }
+    .f-cap { color: #374151; font-size: 11.5px; line-height: 1.35; margin: 0 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .f-actions { display: flex; align-items: center; gap: 10px; }
+    .f-actions button {
+      appearance: none; border: 0; background: none; padding: 2px 0; cursor: pointer;
+      font-family: var(--mono); font-size: 11px; color: var(--muted); display: inline-flex; align-items: center; gap: 3px;
+    }
+    .f-actions .like.on { color: #E54B4B; }
+    .f-actions .like.on .h { animation: heart .4s var(--ease); display: inline-block; }
+    @keyframes heart { 50% { transform: scale(1.5); } }
+    .f-actions .save { margin-left: auto; }
+    .f-actions .save.on { color: var(--brand-ink); font-weight: 700; }
+    .demo-hint { text-align: center; margin-top: 14px; }
+
     /* The journey: sticky phone that changes with each step */
     .journey-head { display: flex; justify-content: space-between; align-items: baseline; border-top: 2px solid var(--ink); padding-top: 14px; }
     .journey { display: grid; grid-template-columns: 1fr 300px; gap: 64px; }
@@ -277,7 +326,7 @@
     /* Between swaps */
     .between { padding-block: 72px; }
     .between h2 { margin: 0 0 28px; font-size: 32px; font-weight: 500; }
-    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
     .card {
       border: 1.5px solid var(--ink); border-radius: 10px; padding: 20px 18px;
       background: var(--paper); box-shadow: 3px 3px 0 var(--ink);
@@ -313,6 +362,13 @@
     .field input::placeholder { color: #6B7280; }
     .field input:focus { border-color: var(--brand); outline: none; }
     .hint { font-size: 14px; color: #9CA3AF; line-height: 1.4; }
+    .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .done-msg { display: none; }
+    .form.is-done > :not(.done-msg) { display: none; }
+    .form.is-done .done-msg { display: block; }
+    .done-msg h3 { margin: 0 0 8px; font-size: 30px; font-weight: 500; line-height: 1.1; }
+    .done-msg p { margin: 0; color: #D1D5DB; font-size: 17px; }
+    .form .btn[disabled] { opacity: .6; cursor: wait; }
     .fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
     .choices { display: flex; flex-wrap: wrap; gap: 8px; }
     .choice input { position: absolute; opacity: 0; pointer-events: none; }
@@ -345,12 +401,14 @@
 
     @media (max-width: 900px) {
       .open { grid-template-columns: 1fr; padding-block: 48px; gap: 36px; }
+      .feed { grid-template-columns: 1fr; gap: 36px; padding-bottom: 64px; }
+      .feed-demo .phone { height: 600px; }
       .journey { grid-template-columns: 1fr; gap: 0; }
       .phone-rail { display: none; }
       .step { min-height: 0; padding: 40px 0; }
       .step .inline-phone { display: block; grid-column: 1 / -1; margin-top: 24px; }
       .step .inline-phone .phone { transform: scale(.88); transform-origin: top center; margin-bottom: -60px; }
-      .cards { grid-template-columns: 1fr 1fr; }
+      .cards { grid-template-columns: 1fr; }
       .join-grid { grid-template-columns: 1fr; gap: 32px; }
     }
     @media (max-width: 680px) {
@@ -386,8 +444,8 @@
   <main>
     <section class="wrap open">
       <div class="open-copy">
-        <h1>Pass the book on.<em>Swap with readers near you.</em></h1>
-        <p class="lede">Readrr is for the books you've finished and the ones you're hunting for. List what's on your shelf, find what's nearby, and swap in person somewhere public.</p>
+        <h1>Pass the book on.<em>Share what you're reading. Swap what you've finished.</em></h1>
+        <p class="lede">Readrr is a home for readers. Post the book you're reading, see what readers near you can't put down, and swap the ones you've finished in person somewhere public.</p>
         <div class="cta-row">
           <a class="btn" href="#join">Join the iPhone beta →</a>
           <span class="plain">Free · takes a minute</span>
@@ -406,9 +464,38 @@
       </div>
     </section>
 
+    <section class="wrap feed" aria-labelledby="feed-title">
+      <div class="feed-copy reveal">
+        <span class="label">The feed</span>
+        <h2 id="feed-title">A feed made of books.</h2>
+        <p>Not everything has to be a swap. Post the book on your nightstand, the one you just finished, or the one you'd press into a friend's hands, and see what other readers are into.</p>
+        <ul class="feed-points">
+          <li><span class="ico" aria-hidden="true">✎</span><span><strong>Post what you're reading.</strong> Scan or search the book, add a line about it, and it lands in the feed with its cover.</span></li>
+          <li><span class="ico" aria-hidden="true">♥</span><span><strong>Like and comment.</strong> Talk books with readers who are reading the same ones, and get a nudge when they reply.</span></li>
+          <li><span class="ico" aria-hidden="true">＋</span><span><strong>Save to your shelf in a tap.</strong> Spot something good and it goes straight onto your want-to-read list.</span></li>
+          <li><span class="ico" aria-hidden="true">◎</span><span><strong>Find your people.</strong> Tap any reader to see everything they've posted and listed.</span></li>
+        </ul>
+      </div>
+
+      <div class="feed-demo reveal">
+        <div class="phone">
+          <div class="screen-stack">
+            <div class="f-tabs" aria-hidden="true"><span class="on">Feed</span><span>Swaps</span></div>
+            <form class="composer" id="composer" autocomplete="off">
+              <label class="hp" for="c-title">What are you reading?</label>
+              <input id="c-title" maxlength="40" placeholder="What are you reading?" />
+              <button type="submit">Post</button>
+            </form>
+            <div class="f-grid" id="f-grid" aria-live="polite"></div>
+          </div>
+        </div>
+        <p class="label demo-hint">Try it: post a book, like one, save one</p>
+      </div>
+    </section>
+
     <section class="wrap" aria-labelledby="journey">
       <div class="journey-head">
-        <span class="label" id="journey">One book, start to finish</span>
+        <span class="label" id="journey">Swapping, start to finish</span>
         <span class="label">06 steps</span>
       </div>
       <div class="journey">
@@ -532,9 +619,8 @@
     </template>
 
     <section class="wrap between" aria-labelledby="between">
-      <h2 id="between">Between swaps</h2>
+      <h2 id="between">Also in the app</h2>
       <div class="cards">
-        <div class="card reveal"><span class="glyph" aria-hidden="true">✎</span><span class="label">The feed</span><p>Share what you're reading, what you just finished and what you'd recommend. Like and comment on other readers' posts.</p></div>
         <div class="card reveal"><span class="glyph" aria-hidden="true">▥</span><span class="label">Your shelf</span><p>Keep track of books you want to read, are reading, and have finished.</p></div>
         <div class="card reveal"><span class="glyph" aria-hidden="true">✦</span><span class="label">Wishlist alerts</span><p>Get a nudge when someone nearby lists a book from your want-to-read shelf.</p></div>
         <div class="card reveal"><span class="glyph" aria-hidden="true">⊘</span><span class="label">Block &amp; report</span><p>Block anyone, which hides their posts and stops swaps and messages, or report a person or post.</p></div>
@@ -547,14 +633,24 @@
           <span class="label">Join the beta</span>
           <h2 id="join-title">Help us test it<br />before everyone else.</h2>
           <ol>
-            <li>Tell us the Apple ID email you use on your iPhone.</li>
+            <li>Leave the Apple ID email you use on your iPhone.</li>
             <li>We'll send you a TestFlight invite, Apple's app for trying apps before release.</li>
             <li>Open the invite on your iPhone, install Readrr, and tell us what breaks.</li>
           </ol>
           <p class="note">On Android? The beta is iPhone only for now. Sign up anyway and we'll tell you when Android is ready.</p>
+          <p class="note">We only use these details to invite you and to let you know when Readrr is ready. See our <a href="/privacy/">privacy policy</a>.</p>
         </div>
 
         <form class="form" id="beta-form" novalidate>
+          <div class="done-msg" role="status">
+            <span class="label">You're on the list</span>
+            <h3>Thanks, we'll be in touch.</h3>
+            <p id="done-detail">Watch your inbox for a TestFlight invite from Apple. It comes to the email you gave us.</p>
+          </div>
+          <div class="hp" aria-hidden="true">
+            <label for="f-website">Leave this empty</label>
+            <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
           <div class="field">
             <label for="f-email">Apple ID email</label>
             <input id="f-email" name="email" type="email" autocomplete="email" placeholder="you@icloud.com" required />
@@ -582,7 +678,7 @@
           <p class="error" id="f-error" role="alert">Please enter a valid email address.</p>
           <button class="btn" type="submit">Count me in →</button>
           <div class="sent" id="sent" aria-live="polite">
-            Your email app should open with everything filled in. Just press send.<br />
+            We couldn't save that just now. Your email app should open instead, with everything filled in.<br />
             Nothing opened? Send it to <a href="mailto:support@readrr.app">support@readrr.app</a> yourself:
             <br /><button type="button" class="copy" id="copy">Copy the message</button>
           </div>
@@ -683,6 +779,80 @@
         '<span class="count">' + swaps + (swaps === 1 ? ' swap' : ' swaps') + ' · 0 books bought</span>';
     });
 
+    /* ---------- Feed demo ---------- */
+    var POSTS = [
+      { u: 'maya.reads', a: '#F2B880', t: 'Persuasion', au: 'Jane Austen', c: '#2F5D50', x: '#F2E8D5', k: 'Just finished', cap: 'Captain Wentworth\'s letter. That\'s it, that\'s the review.', l: 24, m: 6 },
+      { u: 'tomwrites', a: '#8FB996', t: 'Moby-Dick', au: 'Herman Melville', c: '#1F3A5F', x: '#F2E8D5', k: 'Currently reading', cap: 'Chapter 32 is a whole lecture on whales and I\'m here for it.', l: 11, m: 3 },
+      { u: 'priya_p', a: '#E8B4B8', t: 'Little Women', au: 'Louisa May Alcott', c: '#E8B4B8', k: 'Recommend', cap: 'For anyone who needs a cry and a hug.', l: 37, m: 9 },
+      { u: 'the.archivist', a: '#38B6FF', t: 'Frankenstein', au: 'Mary Shelley', c: '#4A4E69', x: '#F2E8D5', k: 'Just finished', cap: 'The creature was right, honestly.', l: 18, m: 12 },
+      { u: 'sam_on_page', a: '#D98E04', t: 'Walden', au: 'Henry David Thoreau', c: '#8FB996', k: 'Currently reading', cap: 'Reading this on the bus, which feels like cheating.', l: 7, m: 1 },
+      { u: 'oluwa.reads', a: '#7A2E2E', t: 'Middlemarch', au: 'George Eliot', c: '#7A2E2E', x: '#F2E8D5', k: 'Recommend', cap: 'Slow start, best ending. Stick with it.', l: 29, m: 5 }
+    ];
+    var COVER_COLOURS = [['#1F3A5F', '#F2E8D5'], ['#F2D9A0', ''], ['#2F5D50', '#F2E8D5'], ['#38B6FF', ''], ['#7A2E2E', '#F2E8D5'], ['#D98E04', '']];
+    var grid = document.getElementById('f-grid');
+
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+
+    function card(p, isNew) {
+      var c = el('article', 'f-card' + (isNew ? ' new' : ''));
+      var user = el('div', 'f-user');
+      var av = el('span', 'f-av'); av.style.setProperty('--a', p.a);
+      user.appendChild(av); user.appendChild(document.createTextNode('@' + p.u));
+      var cover = el('div', 'cover');
+      cover.style.setProperty('--c', p.c);
+      if (p.x) cover.style.setProperty('--t', p.x); else cover.style.setProperty('--t', '#111827');
+      cover.appendChild(el('b', null, p.t)); cover.appendChild(el('i', null, p.au));
+      c.appendChild(user); c.appendChild(cover);
+      c.appendChild(el('span', 'f-kind', p.k));
+      c.appendChild(el('p', 'f-title', p.t));
+      if (p.cap) c.appendChild(el('p', 'f-cap', p.cap));
+      var actions = el('div', 'f-actions');
+      var like = el('button', 'like'); like.type = 'button';
+      like.setAttribute('aria-label', 'Like ' + p.t); like.setAttribute('aria-pressed', 'false');
+      var h = el('span', 'h', '♡'); var lc = el('span', null, String(p.l));
+      like.appendChild(h); like.appendChild(lc);
+      like.addEventListener('click', function () {
+        var on = !like.classList.contains('on');
+        like.classList.toggle('on', on);
+        like.setAttribute('aria-pressed', String(on));
+        h.textContent = on ? '♥' : '♡';
+        lc.textContent = String(p.l + (on ? 1 : 0));
+      });
+      var com = el('span', null, '💬 ' + p.m); com.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--muted)';
+      var save = el('button', 'save', '＋ Save'); save.type = 'button';
+      save.setAttribute('aria-label', 'Save ' + p.t + ' to your shelf'); save.setAttribute('aria-pressed', 'false');
+      save.addEventListener('click', function () {
+        var on = !save.classList.contains('on');
+        save.classList.toggle('on', on);
+        save.setAttribute('aria-pressed', String(on));
+        save.textContent = on ? '✓ Saved' : '＋ Save';
+      });
+      actions.appendChild(like); actions.appendChild(com); actions.appendChild(save);
+      c.appendChild(actions);
+      return c;
+    }
+    POSTS.forEach(function (p) { grid.appendChild(card(p)); });
+
+    var posted = 0;
+    document.getElementById('composer').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('c-title');
+      var title = input.value.trim().slice(0, 40);
+      if (!title) { input.focus(); return; }
+      var col = COVER_COLOURS[posted++ % COVER_COLOURS.length];
+      grid.insertBefore(card({
+        u: 'you', a: '#38B6FF', t: title, au: 'Your post', c: col[0], x: col[1],
+        k: 'Currently reading', cap: '', l: 0, m: 0
+      }, true), grid.firstChild);
+      grid.scrollTop = 0;
+      input.value = '';
+    });
+
     /* ---------- Journey phone ---------- */
     var tpl = document.getElementById('screens');
     var phone = document.getElementById('phone');
@@ -750,6 +920,15 @@
     var sent = document.getElementById('sent');
     var lastBody = '';
 
+    var SIGNUP_URL = 'https://kdringlaxizrryomgmuq.supabase.co/functions/v1/join-beta';
+    var submitBtn = form.querySelector('button[type=submit]');
+
+    function openMail(subject) {
+      window.location.href = 'mailto:support@readrr.app?subject=' + encodeURIComponent(subject) +
+        '&body=' + encodeURIComponent(lastBody);
+      sent.classList.add('show');
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var email = form.email.value.trim();
@@ -757,21 +936,50 @@
         err.classList.add('show'); form.email.focus(); return;
       }
       err.classList.remove('show');
+      sent.classList.remove('show');
       var city = form.city.value.trim();
-      var phoneType = (form.querySelector('input[name=phone]:checked') || {}).value || '';
-      var postage = (form.querySelector('input[name=postage]:checked') || {}).value || 'not answered';
+      var phoneType = (form.querySelector('input[name=phone]:checked') || {}).value || 'iPhone';
+      var postage = (form.querySelector('input[name=postage]:checked') || {}).value || '';
       lastBody =
         'Hi Readrr,\n\nI\'d like to test the app.\n\n' +
         'Apple ID email (for the TestFlight invite): ' + email + '\n' +
         'Where I\'m based: ' + (city || 'not given') + '\n' +
         'Phone: ' + phoneType + '\n' +
-        'Would I use postage to swap with readers further away (UK): ' + postage + '\n';
+        'Would I use postage to swap with readers further away (UK): ' + (postage || 'not answered') + '\n';
       var subject = phoneType === 'Android'
         ? 'Readrr: tell me when Android is ready'
         : 'Readrr beta: count me in';
-      window.location.href = 'mailto:support@readrr.app?subject=' + encodeURIComponent(subject) +
-        '&body=' + encodeURIComponent(lastBody);
-      sent.classList.add('show');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving…';
+      // On a bad connection, fall back to email rather than leave people waiting.
+      var ctrl = window.AbortController ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 15000);
+      fetch(SIGNUP_URL, {
+        method: 'POST',
+        signal: ctrl ? ctrl.signal : undefined,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email, city: city, phone: phoneType, postage: postage,
+          website: form.website.value, source: 'landing'
+        })
+      })
+        .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, body: j }; }); })
+        .then(function (r) {
+          if (r.ok) {
+            if (phoneType === 'Android') {
+              document.getElementById('done-detail').textContent =
+                "The beta is iPhone only for now. We'll email you as soon as Readrr is on Android.";
+            }
+            form.classList.add('is-done');
+          } else if (r.body && r.body.error && /valid email/.test(r.body.error)) {
+            err.textContent = r.body.error; err.classList.add('show'); form.email.focus();
+          } else {
+            openMail(subject);
+          }
+        })
+        .catch(function () { openMail(subject); })
+        .then(function () { clearTimeout(timer); submitBtn.disabled = false; submitBtn.textContent = 'Count me in →'; });
     });
 
     document.getElementById('copy').addEventListener('click', function () {
