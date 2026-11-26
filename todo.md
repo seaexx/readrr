@@ -48,12 +48,11 @@ CLI-linked and fully migrated; push is provisioned; the app has an app-wide seri
 - [ ] **Test push + barcode scan on a REAL device** — once the env-fixed build is installed.
 
 ### P1 — correctness / safety before real users
-- [ ] **Supabase linter: RLS disabled on `public.spatial_ref_sys`** (PostGIS table). Not user data,
-      but anon/authenticated can INSERT/UPDATE/DELETE it through the API (could break distance
-      queries). Migration 022 tried RLS + revoke: no-op, the table is owned by `supabase_admin`.
-      Options: ask Supabase support to enable RLS / revoke writes, or move PostGIS to the
-      `extensions` schema (not relocatable: drop + recreate, so `users.location`/`posts.location`
-      must be backed up and restored, and RPCs from 015/018 rechecked).
+- [x] **Supabase linter: RLS disabled on `public.spatial_ref_sys`** — FIXED by migration 023: PostGIS
+      reinstalled in the `extensions` schema (not exposed by the API; REST now 404s the table).
+      All 15 locations restored and verified point-for-point; GiST indexes recreated; geo RPCs'
+      search_path now `public, extensions`. 022 (RLS attempt) was a no-op, table owned by supabase_admin.
+- [ ] **Drop `backup.locations_20261126`** (and the `backup` schema) once Swaps/nearby is verified on device.
 - [x] **Safe swap-post delete + duplicate-post prevention.** DONE — deleting a swap listing that
       has requests/chat now warns and offers "Hide instead" (`getPostSwapImpact` + ProfileScreen
       delete flow); duplicate active listings are blocked by a partial unique index (migration 019,
